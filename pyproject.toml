@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "colab-utils"
 version = "0.1.0"
-description = "Convenience utilities for testing or running packages in development on Google Colab"
+description = "Convenience utilities for development workflows on Google Colab"
 authors = [
     {name = "dd-n-kk", email = "djlstvn.cs03@gmail.com"}
 ]
