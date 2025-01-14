@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "colab-utils"
+version = "0.1.0"
+description = "Convenience utilities for testing or running packages in development on Google Colab"
+authors = [
+    {name = "dd-n-kk", email = "djlstvn.cs03@gmail.com"}
+]
+readme = "README.md"
+keywords = ["Colab", "Google", "GitHub", "uv", "workflow", "cloud"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
+    "Topic :: Utilities",
+]
+requires-python = ">=3.10, <=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29.5",
+    "mkdocs-material>=9.5.49",
+    "mkdocstrings-python>=1.13.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/dd-n-kk/colab-utils"
+Documentation = "https://readthedocs.org"
+Issues = "https://github.com/dd-n-kk/colab-utils/issues"
