@@ -9,7 +9,7 @@ description = "Convenience utilities for development workflows on Google Colab"
 authors = [
     {name = "dd-n-kk", email = "djlstvn.cs03@gmail.com"}
 ]
-readme = "README.md"
+readme = "docs/README.md"
 keywords = ["Colab", "Google", "GitHub", "uv", "workflow", "cloud"]
 classifiers = [
     "Programming Language :: Python :: 3",
