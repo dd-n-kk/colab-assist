@@ -22,9 +22,9 @@ dependencies = []
 
 [dependency-groups]
 dev = [
-    "ipykernel>=6.29.5",
-    "mkdocs-material>=9.5.49",
-    "mkdocstrings-python>=1.13.0",
+    "ipykernel",
+    "mkdocs-material",
+    "mkdocstrings-python",
 ]
 
 [project.urls]

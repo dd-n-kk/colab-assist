@@ -135,9 +135,9 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "ipykernel", specifier = ">=6.29.5" },
-    { name = "mkdocs-material", specifier = ">=9.5.49" },
-    { name = "mkdocstrings-python", specifier = ">=1.13.0" },
+    { name = "ipykernel" },
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings-python" },
 ]
 
 [[package]]
