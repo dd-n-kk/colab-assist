@@ -1,72 +1,48 @@
 __all__ = (
-    "sync_gh",
-    "reload",
     "install",
-    "update_uv",
+    "install_gh",
+    "clone_gh",
+    "pull_gh",
+    "reload",
+    "restart",
+    "mount",
+    "unmount",
+    "end",
+    "update_git",
 )
 
 
 import importlib
+import os
+import pickle
 import shlex
+import shutil
 import subprocess
 import sys
 from getpass import getpass
 from types import ModuleType
 
-from google.colab import userdata
+from google.colab import drive, runtime, userdata
 
-_uv_updated: bool = False
+_COLAB_ROOT = "/content/"
+_DRIVE_MNTPT = "/content/drive/"
+_DRIVE_ROOT = "/content/drive/MyDrive/"
+_REPOS_ROOT = "/content/repos/"
+_STATE_PATH = "/content/.colab_state"
+
+_git_updated = False
+_uv_updated = False
+_sys_path_extensions = []
 
 
-def sync_gh(
-    owner: str,
-    repo: str,
-    branch: str | None = None,
-    *,
-    secret: str | None = None,
-    auth: str | None = None,
-    prompt: bool = True,
-    timeout: int | None = 60,
-) -> None:
-    """Install or reinstall a package hosted in a GitHub repository with `uv`.
-
-    - This function is mainly for (re)installing on Colab your in-development GitHub repository.
-        Currently the supported authentication mechanism for a private repository
-        is a [PAT (personal access token)](https://is.gd/qWZkuT).
-
-    - Currently the recommended way to manage a PAT is via [Colab Secrets](
-        https://stackoverflow.com/a/77737451).
-        Use the Colab Secret by passing its key to `secret`.
-
-    - You may also load your PAT into a variable in your preferred way,
-        and then pass it to `auth`. Otherwise, by default a [`getpass`](
-        https://docs.python.org/3/library/getpass.html)
-        prompt will show up for you to paste your PAT.
+def install(*packages: str, timeout: int | None = 60) -> None:
+    """Install or update package(s) with uv.
 
     Args:
-        owner: Name of the GitHub repository owner.
+        packages: Specification(s) of the package(s) to install or update.
 
-        repo: Name of the GitHub repository.
-
-        branch: Name of the GitHub repository branch to install from.
-
-            - `None`: Use the repository's default branch.
-
-        secret: Colab Secrets key to your GitHub authentication info.
-
-            - If `secret` is provided, `auth` and `prompt` are ignored.
-
-        auth: Your GitHub authentication info.
-
-            - If `auth` is provided, `prompt` is ignored.
-            - Explicitly providing the authentication info as a string literal is discouraged.
-
-        prompt: Option to prompt for your GitHub authentication info.
-
-            - `True`: When neither `secret` nor `auth` is provided,
-                a `getpass` prompt for your GitHub authentication info will show up.
-            - `False`: When neither `secret` nor `auth` is provided, this function simply proceeds
-                with the assumption that the GitHub repository does not require authentication.
+            - See [uv docs](https://docs.astral.sh/uv/pip/packages/#installing-a-package)
+                for ways to specify packages.
 
         timeout: Timeout in seconds for the spawned subprocess.
 
@@ -75,26 +51,252 @@ def sync_gh(
     Examples:
         ```py
         import colab_utils as U
-        U.sync_gh("me", "my_private_repo", "dev", secret="my_secret_key")
+        U.install('polars')
+        U.install('numpy==2.2.0', 'scipy', timeout=None)
         ```
     """
 
-    update_uv()
+    if not packages:
+        return
 
-    if secret:
-        try:
-            auth = userdata.get(secret)
-        except (userdata.NotebookAccessError, userdata.SecretNotFoundError) as err:
-            print(err)
-            return
-    elif not auth and prompt:
-        auth = getpass("Authentication (or enter nothing to skip): ")
-
-    prefix = f"git+https://{auth}@github.com/" if auth else "git+https://github.com/"
-    suffix = f"{owner}/{repo}@{branch}" if branch else f"{owner}/{repo}"
+    packages = tuple(shlex.quote(package) for package in packages)
     try:
         result = subprocess.run(
-            ("uv", "pip", "install", "--system", "-Uq", shlex.quote(f"{prefix}{suffix}")),
+            shlex.split(f"uv pip install --system -q {' '.join(packages)}"),
+            capture_output=True,
+            encoding="utf-8",
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        print(exc)
+    else:
+        if result.returncode != 0:
+            print(result.stderr, end="")
+
+
+def install_gh(
+    repo: str,
+    branch: str | None = None,
+    *,
+    opt: str = "",
+    auth: str | None = None,
+    secret: str | None = None,
+    timeout: int | None = 60,
+) -> None:
+    """Install or update a package hosted in a GitHub repository with uv.
+
+    - This function is mainly for (re)installing on Colab your in-development GitHub repository.
+        After reinstallation, use [`reload()`][colab_utils.reload] or
+        [`restart()`][colab_utils.restart] for the update to take effect.
+
+    - For accessing your private GitHub repository, colab-utils currently authenticates with
+        [personal access tokens](https://is.gd/qWZkuT) (PATs).
+
+    - Currently the recommended way to manage PATs on Colab is via [Colab Secrets](
+        https://stackoverflow.com/a/77737451). Use a Colab Secret by passing its name to `secret`.
+
+    - You can also load your PAT into a variable in your preferred way and pass it to `auth`.
+        Otherwise, by default a skippable prompt will show up for pasting your PAT.
+
+    Args:
+        repo: Identifier of the GitHub repository, in the form `⟨owner⟩/⟨repo_name⟩`.
+
+        branch: Name of the branch to install from.
+
+            - `None`: Use the repository's default branch.
+
+        opt: A string as an order-agnostic set of single-letter option flags.
+            An option is enabled if and only if its corresponding letter is in the string.
+
+            - `q` for _quiet_:
+                Suppress the skippable prompt for GitHub authentication info
+                when neither `auth` nor `secret` is provided.
+                The function will then assume GitHub authentication is not required.
+
+        auth: Your GitHub authentication info.
+
+            - If `auth` is provided, `secret` is ignored.
+
+        secret: Name of the Colab Secret storing your GitHub authentication info.
+
+        timeout: Timeout in seconds for the spawned subprocess.
+
+            - `None`: No timeout.
+
+    Examples:
+        ```py
+        import colab_utils as U
+        U.install_gh("me/my_private_repo", "dev", secret="my_secret")
+        ```
+    """
+
+    auth = auth or _get_auth(secret, "q" not in opt)
+    prefix = f"git+https://{auth}@github.com/" if auth else "git+https://github.com/"
+    suffix = f"{repo}@{branch}" if branch else repo
+    try:
+        result = subprocess.run(
+            ("uv", "pip", "install", "--system", "-qU", shlex.quote(f"{prefix}{suffix}")),
+            capture_output=True,
+            encoding="utf-8",
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        print(exc)
+    else:
+        if result.returncode != 0:
+            print(result.stderr, end="")
+
+
+def clone_gh(
+    repo: str,
+    branch: str | None = None,
+    *,
+    opt: str = "",
+    dir_name: str | None = None,
+    auth: str | None = None,
+    secret: str | None = None,
+    timeout: int | None = 60,
+) -> None:
+    """Clone a GitHub repository and optionally make it importable if it is a Python package.
+
+    - See [`install_gh()`][colab_utils.install_gh] for details on GitHub authentication.
+
+    - By default, this function just clones the GitHub repository into a subdirectory
+        in `/content/repos/`.
+        If you are cloning a Python package, automatic actions to make the package importable
+        can be enabled with some options in `opt`.
+
+    Args:
+        repo: Identifier of the GitHub repository, in the form `⟨owner⟩/⟨repo_name⟩`.
+
+        branch: Name of the branch to clone from.
+
+            - `None`: Clone the history of all branches and use the default branch.
+
+        opt: A string as an order-agnostic set of single-letter option flags.
+            An option is enabled if and only if its corresponding letter is in the string.
+
+            - `p` for _path_:
+                This option shadows, and should not be used together with, `e`.
+                This option assumes that the GitHub repository hosts a Python package,
+                and will add the top-level module directory of the clone to `sys.path`.
+                This allows importing the package without installing it,
+                which may be useful when the many packages pre-installed on Colab
+                cause distracting dependency issues.
+
+                Notable implications include:
+
+                - The cloned package is immediately importable without needing a session restart.
+                - Changes in the clone (e.g. by [`pull_gh()`][colab_utils.pull_gh])
+                    can take effect via [`reload()`][colab_utils.reload];
+                    a session restart is not mandatory.
+                - If a Colab session restart is triggered by [`restart()`][colab_utils.restart],
+                    `colab_utils` module will try to recover `sys.path` upon the next import.
+                    But otherwise you will need to manually re-add the top-module directory
+                    to `sys.path` after a session restart.
+
+            - `e` for _editable_:
+                This option is shadowed by, and should not be used together with, `p`.
+                This option assumes that the GitHub repository hosts a Python package,
+                and will install the clone in [editable/development mode](
+                https://setuptools.pypa.io/en/latest/userguide/development_mode.html).
+
+                Notable implications include:
+
+                - Currently an editable install seems to require a session restart to take effect.
+                - But after the installation, changes in the clone can take effect
+                    via [`reload()`][colab_utils.reload]; a session restart is not mandatory.
+                - Unlike `sys.path`, editable install is not reset by session restarts.
+
+            - `q` for _quiet_:
+                Suppress the skippable prompt for GitHub authentication info
+                when neither `auth` nor `secret` is provided.
+                The function will then assume GitHub authentication is not required.
+
+        dir_name: Directory name of the clone.
+
+            - `None`: Use the repository name.
+
+        auth: Your GitHub authentication info.
+
+            - If `auth` is provided, `secret` is ignored.
+
+        secret: Name of the Colab Secret storing your GitHub authentication info.
+
+        timeout: Timeout in seconds for the spawned subprocess.
+
+            - `None`: No timeout.
+
+    Examples:
+        ```py
+        import colab_utils as U
+        U.clone_gh("me/my_public_repo", opt="eq")
+        ```
+    """
+    owner, repo = repo.split("/")
+    repo_path = os.path.join(_REPOS_ROOT, dir_name or repo)
+    if os.path.exists(repo_path):
+        print(f"{repo_path} already exists. Consider `pull_gh('{dir_name or repo}')` instead?")
+        return
+
+    if auth := auth or _get_auth(secret, "q" not in opt):
+        url = shlex.quote(f"https://{auth}@github.com/{owner}/{repo}.git")
+    else:
+        url = shlex.quote(f"https://github.com/{owner}/{repo}.git")
+
+    if branch:
+        cmd = f"git clone --single-branch -b {branch} -- {url} {shlex.quote(repo_path)}"
+    else:
+        cmd = f"git clone -- {url} {shlex.quote(repo_path)}"
+    try:
+        result = subprocess.run(
+            shlex.split(cmd),
+            capture_output=True,
+            encoding="utf-8",
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        print(exc)
+        return
+
+    if result.returncode != 0:
+        print(result.stderr, end="")
+        return
+
+    if "p" in opt:
+        if os.path.isdir(src_path := os.path.join(repo_path, "src")):
+            sys.path.append(src_path)
+            _sys_path_extensions.append(src_path)
+        else:
+            sys.path.append(repo_path)
+            _sys_path_extensions.append(repo_path)
+        return
+
+    if "e" in opt:
+        _install_editable(repo_path)
+        return
+
+
+def pull_gh(dir_name: str, timeout: int | None = 60) -> None:
+    """Pull from the GitHub repository.
+
+    Args:
+        dir_name: Basename of the repository in `/content/repos`.
+
+        timeout: Timeout in seconds for the spawned subprocess.
+
+            - `None`: No timeout.
+    """
+
+    repo_path = os.path.join(_REPOS_ROOT, dir_name)
+    if not os.path.isdir(repo_path):
+        print(f"{repo_path} does not exist or is not a directory.")
+        return
+
+    try:
+        result = subprocess.run(
+            ("git", "pull"),
+            cwd=repo_path,
             capture_output=True,
             encoding="utf-8",
             timeout=timeout,
@@ -129,8 +331,12 @@ def reload(obj: object) -> object:
             It is recommended to always use the `xxx = reload(xxx)` pattern.
 
     - This function should mainly be used on modules, functions, or classes in your package
-        after an updated version is reinstalled, and only when the changes are localized enough
+        for an update to take effect, and only when the changes are localized enough
         that restarting the Colab session is overkill.
+
+    - See also [`%autoreload`](
+        https://ipython.readthedocs.io/en/stable/config/extensions/autoreload.html)
+        for automatically reloading multiple or all modules at once.
 
     Args:
         obj: Object to reload. Usually should be a module, function, or class.
@@ -147,7 +353,7 @@ def reload(obj: object) -> object:
         # ... (Behavior before update)
 
         # (Update made to the source code of `my_pkg` on GitHub)
-        U.sync_gh("my_name", "my_pkg")
+        U.install_gh("my_name", "my_pkg")
 
         my_func = U.reload(my_func)
         MyClass = U.reload(MyClass)
@@ -178,39 +384,62 @@ def reload(obj: object) -> object:
     return getattr(importlib.reload(sys.modules[module_name]), name)
 
 
-def install(*packages: str, timeout: int | None = 180) -> None:
-    """Install or update package(s) with `uv`.
+def restart() -> None:
+    """Trigger a Colab session restart with `exit()` after some bookkeeping operations.
 
-    - This function wraps around the `uv pip install --system` command,
-        which works well in the Colab environment.
+    - Explicitly restarting the Colab session, e.g., with this function,
+        with `exit()`, or with the `Restart session` command in the Colab `Runtime` menu,
+        resets all imports and variables in the Python interpreter session.
+        However, as long as the runtime is not deleted, the installed packages,
+        files in the virtual disk, and Google Drive (if mounted) are preserved.
+        This function does some extra bookkeeping so that certain session states
+        can be recovered upon importing `colab_utils` in the next session.
+    """
+
+    _save_state()
+    exit()
+
+
+def mount(force: bool = False) -> None:
+    """Mount Google Drive.
 
     Args:
-        packages: Specification(s) of the package(s) to install or update.
+        force: Option to force remounting if Google Drive is already mounted.
+    """
+    drive.mount(_DRIVE_MNTPT, force_remount=force)
 
-            - See [`uv` docs](https://docs.astral.sh/uv/pip/packages/#installing-a-package)
-                for ways to specify packages.
 
+def unmount() -> None:
+    """Flush and unmount Google Drive."""
+    drive.flush_and_unmount()
+
+
+def end() -> None:
+    """Terminate the Colab runtime after some cleanup operations."""
+    _clear_repos()
+    drive.flush_and_unmount()
+    runtime.unassign()
+
+
+def update_git(timeout: int | None = 90) -> None:
+    """Update Git.
+
+    - With the current implementation (using APT), the update process is relatively long (~30s).
+
+    Args:
         timeout: Timeout in seconds for the spawned subprocess.
 
             - `None`: No timeout.
-
-    Examples:
-        ```py
-        import colab_utils as U
-        U.install('polars')
-        U.install('numpy==2.2.0', 'scipy', timeout=None)
-        ```
     """
 
-    update_uv()
-
-    if not packages:
+    global _git_updated
+    if _git_updated:
         return
 
-    packages = tuple(shlex.quote(package) for package in packages)
     try:
         result = subprocess.run(
-            shlex.split(f"uv pip install --system -q {' '.join(packages)}"),
+            "add-apt-repository -y 'ppa:git-core/ppa' && apt-get -y install git",
+            shell=True,  # For `&&`.
             capture_output=True,
             encoding="utf-8",
             timeout=timeout,
@@ -220,21 +449,28 @@ def install(*packages: str, timeout: int | None = 180) -> None:
     else:
         if result.returncode != 0:
             print(result.stderr, end="")
+        else:
+            _git_updated = True
 
 
-def update_uv() -> None:
-    """Update the `uv` package pre-installed on Colab.
+def _clear_repos() -> None:
+    shutil.rmtree(_REPOS_ROOT, ignore_errors=True)
 
-    - This function tries to run only once by setting a global flag.
-    """
 
-    global _uv_updated
-    if _uv_updated:
-        return
+def _get_auth(secret: str | None = None, prompt: bool = True) -> str:
+    if secret:
+        return userdata.get(secret)
 
+    if prompt:
+        return getpass("Authentication (or enter nothing to skip): ")
+
+    return ""
+
+
+def _install_editable(path: str) -> None:
     try:
         result = subprocess.run(
-            ("uv", "pip", "install", "--system", "-q", "uv"),
+            ("uv", "pip", "install", "--system", "-qe", shlex.quote(path)),
             capture_output=True,
             encoding="utf-8",
             timeout=30,
@@ -244,5 +480,70 @@ def update_uv() -> None:
     else:
         if result.returncode != 0:
             print(result.stderr, end="")
+
+
+def _load_state() -> None:
+    global _git_updated, _uv_updated, _sys_path_extensions
+    if os.path.isfile(_STATE_PATH):
+        with open(_STATE_PATH, "rb") as file:
+            state = pickle.load(file)
+            if "git_updated" in state:
+                _git_updated = state["git_updated"]
+            if "uv_updated" in state:
+                _uv_updated = state["uv_updated"]
+            if "sys_path_extensions" in state:
+                _sys_path_extensions = state["sys_path_extensions"]
+                sys.path.extend(_sys_path_extensions)
+
+
+def _reinstall(path: str) -> None:
+    try:
+        result = subprocess.run(
+            ("uv", "pip", "install", "--system", "--reinstall", "-q", shlex.quote(path)),
+            capture_output=True,
+            encoding="utf-8",
+            timeout=30,
+        )
+    except subprocess.TimeoutExpired as exc:
+        print(exc)
+    else:
+        if result.returncode != 0:
+            print(result.stderr, end="")
+
+
+def _save_state() -> None:
+    with open(_STATE_PATH, "wb") as file:
+        pickle.dump(
+            {
+                "git_updated": _git_updated,
+                "uv_updated": _uv_updated,
+                "sys_path_extensions": _sys_path_extensions,
+            },
+            file,
+            pickle.HIGHEST_PROTOCOL,
+        )
+
+
+def _update_uv() -> None:
+    global _uv_updated
+    if _uv_updated:
+        return
+
+    try:
+        result = subprocess.run(
+            ("uv", "pip", "install", "--system", "-q", "uv"),
+            capture_output=True,
+            encoding="utf-8",
+            timeout=10,
+        )
+    except subprocess.TimeoutExpired as exc:
+        print(exc)
+    else:
+        if result.returncode != 0:
+            print(result.stderr, end="")
         else:
             _uv_updated = True
+
+
+_load_state()
+_update_uv()
