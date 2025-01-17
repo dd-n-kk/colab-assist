@@ -22,7 +22,8 @@ import sys
 from getpass import getpass
 from types import ModuleType
 
-from google.colab import drive, runtime, userdata
+from google.colab import drive, runtime, userdata  # type: ignore
+from IPython.core.getipython import get_ipython
 
 _COLAB_ROOT = "/content/"
 _DRIVE_MNTPT = "/content/drive/"
@@ -385,8 +386,9 @@ def reload(obj: object) -> object:
 
 
 def restart() -> None:
-    """Trigger a Colab session restart with `exit()` after some bookkeeping operations.
+    """Trigger a Colab session restart after some bookkeeping operations.
 
+    - Colab is expected to issue a notification: "Your session crashed for an unknown reason."
     - Explicitly restarting the Colab session, e.g., with this function,
         with `exit()`, or with the `Restart session` command in the Colab `Runtime` menu,
         resets all imports and variables in the Python interpreter session.
@@ -397,7 +399,11 @@ def restart() -> None:
     """
 
     _save_state()
-    exit()
+
+    if (ishell := get_ipython()) is None:
+        print("Global interactive shell not found. Try `exit()` or `Runtime -> Restart session`.")
+    else:
+        ishell.ask_exit()  # type: ignore
 
 
 def mount(force: bool = False) -> None:
