@@ -1,8 +1,8 @@
-site_name: colab-utils documentation
+site_name: colast documentation
 
 
-repo_url: 'https://github.com/dd-n-kk/colab-utils/'
-repo_name: 'dd-n-kk/colab-utils'
+repo_url: 'https://github.com/dd-n-kk/colast/'
+repo_name: 'dd-n-kk/colast'
 
 
 nav:
@@ -54,9 +54,9 @@ extra:
 
   social:
   - icon: fontawesome/brands/github
-    link: 'https://github.com/dd-n-kk/colab-utils/'
+    link: 'https://github.com/dd-n-kk/colast/'
   - icon: fontawesome/brands/python
-    link: 'https://test.pypi.org/project/colab-utils/'
+    link: 'https://pypi.org/project/colast/'
 
 
 plugins:

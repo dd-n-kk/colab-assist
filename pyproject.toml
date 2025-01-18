@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "colab-utils"
+name = "colast"
 version = "0.1.0"
-description = "Convenience utilities for development workflows on Google Colab"
+description = "Utilities that assist development workflows on Google Colab"
 authors = [
     {name = "dd-n-kk", email = "djlstvn.cs03@gmail.com"}
 ]
@@ -28,6 +28,6 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/dd-n-kk/colab-utils"
-Documentation = "https://colab-utils.readthedocs.io"
-Issues = "https://github.com/dd-n-kk/colab-utils/issues"
+Homepage = "https://github.com/dd-n-kk/colast"
+Documentation = "https://colast.readthedocs.io"
+Issues = "https://github.com/dd-n-kk/colast/issues"
