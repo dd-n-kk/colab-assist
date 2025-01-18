@@ -29,5 +29,5 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/dd-n-kk/colab-utils"
-Documentation = "https://readthedocs.org"
+Documentation = "https://colab-utils.readthedocs.io"
 Issues = "https://github.com/dd-n-kk/colab-utils/issues"

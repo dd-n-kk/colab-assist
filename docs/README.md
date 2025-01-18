@@ -5,7 +5,7 @@
   </p>
 
   <h4>
-    <a href="https://readthedocs.org">Documentation</a>
+    <a href="https://colab-utils.readthedocs.io">Documentation</a>
   <span> · </span>
     <a href="https://github.com/dd-n-kk/colab-utils/issues/">Issues</a>
   </h4>
