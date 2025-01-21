@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "colast"
-version = "0.1.1"
+version = "0.1.2"
 description = "Utilities that assist development workflows on Google Colab"
 authors = [
     {name = "dd-n-kk", email = "djlstvn.cs03@gmail.com"}
@@ -25,6 +25,7 @@ dev = [
     "ipykernel",
     "mkdocs-material",
     "mkdocstrings-python",
+    "tqdm",
 ]
 
 [project.urls]

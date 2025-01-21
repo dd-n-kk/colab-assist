@@ -4,6 +4,7 @@ __all__ = (
     "clone_gh",
     "pull_gh",
     "reload",
+    "download",
     "restart",
     "mount",
     "unmount",
@@ -19,11 +20,15 @@ import shlex
 import shutil
 import subprocess
 import sys
+from email.message import EmailMessage
 from getpass import getpass
 from types import ModuleType
+from urllib.parse import urlparse
 
+import requests
 from google.colab import drive, runtime, userdata  # type: ignore
 from IPython.core.getipython import get_ipython
+from tqdm.auto import tqdm
 
 _COLAB_ROOT = "/content/"
 _DRIVE_MNTPT = "/content/drive/"
@@ -234,6 +239,7 @@ def clone_gh(
         A.clone_gh("me/my_public_repo", opt="eq")
         ```
     """
+
     owner, repo = repo.split("/")
     repo_path = os.path.join(_REPOS_ROOT, dir_name or repo)
     if os.path.exists(repo_path):
@@ -385,6 +391,58 @@ def reload(obj: object) -> object:
     return getattr(importlib.reload(sys.modules[module_name]), name)
 
 
+def download(url: str, path: str | None = None, *, chunk_size: int = 131072) -> str | None:
+    """Download a file from a URL.
+
+    Args:
+        url: URL of the file to download.
+
+        path: Destination path of the downloaded file.
+
+            - `None`: The file is saved in the current working directory
+                and the file name is inferred from the response headers or the URL.
+
+        chunk_size: Number of bytes read into memory while iterating over the response data.
+
+            - This argument is passed directly to [`request.Response.iter_content()`](
+                https://requests.readthedocs.io/en/latest/api/#requests.Response.iter_content).
+
+    Returns:
+        Absolute path of the downloaded file, or `None` if the download was not successful.
+    """
+
+    with requests.get(url, stream=True) as resp:
+        if resp.status_code != 200:
+            print(f"{url} responded with status {resp.status_code}:\n{_get_resp_reason(resp)}")
+            return
+
+        if path is None:
+            if h := resp.headers.get("Content-Disposition"):
+                em = EmailMessage()
+                em["Content-Disposition"] = h
+                path = f"{os.getcwd()}/{em.get_filename()}"
+            elif filename := os.path.basename(urlparse(url).path):
+                path = f"{os.getcwd()}/{filename}"
+            else:
+                print(f"Failed to infer file name from {url}. Please specify `path`.")
+                return
+
+        file_size = int(resp.headers.get("Content-Length", 0))
+        with (
+            open(path, "wb") as file,
+            tqdm(
+                total=file_size,
+                unit="iB",
+                unit_scale=True,
+                unit_divisor=1024,
+            ) as bar,
+        ):
+            for chunk in resp.iter_content(chunk_size=chunk_size):
+                bar.update(file.write(chunk))
+
+    return path
+
+
 def restart() -> None:
     """Trigger a Colab session restart after some bookkeeping operations.
 
@@ -412,16 +470,19 @@ def mount(force: bool = False) -> None:
     Args:
         force: Option to force remounting if Google Drive is already mounted.
     """
+
     drive.mount(_DRIVE_MNTPT, force_remount=force)
 
 
 def unmount() -> None:
     """Flush and unmount Google Drive."""
+
     drive.flush_and_unmount()
 
 
 def end() -> None:
     """Terminate the Colab runtime after some cleanup operations."""
+
     _clear_repos()
     drive.flush_and_unmount()
     runtime.unassign()
@@ -471,6 +532,17 @@ def _get_auth(secret: str | None = None, prompt: bool = True) -> str:
         return getpass("Authentication (or enter nothing to skip): ")
 
     return ""
+
+
+def _get_resp_reason(resp: requests.Response) -> str:
+    reason = resp.reason
+    if isinstance(reason, bytes):
+        try:
+            reason = reason.decode("utf-8")
+        except UnicodeDecodeError:
+            reason = reason.decode("iso-8859-1", errors="backslashreplace")
+
+    return reason if reason else "Reason not provided"
 
 
 def _install_editable(path: str) -> None:
