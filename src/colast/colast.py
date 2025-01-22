@@ -68,7 +68,7 @@ def install(*packages: str, timeout: int | None = 60) -> None:
     packages = tuple(shlex.quote(package) for package in packages)
     try:
         result = subprocess.run(
-            shlex.split(f"uv pip install --system -q {' '.join(packages)}"),
+            shlex.split(f"uv pip install --system -qU {' '.join(packages)}"),
             capture_output=True,
             encoding="utf-8",
             timeout=timeout,
