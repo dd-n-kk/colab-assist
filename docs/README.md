@@ -1,7 +1,7 @@
 <div align="center">
   <h1><b>colab-assist</b></h1>
   <p>
-    Utilities that assist development workflows on Google Colab
+    Google Colab workflow utilities
   </p>
 
   <h4>
