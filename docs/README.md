@@ -1,26 +1,26 @@
 <div align="center">
-  <h1><b>colast</b></h1>
+  <h1><b>colab-assist</b></h1>
   <p>
     Utilities that assist development workflows on Google Colab
   </p>
 
   <h4>
-    <a href="https://colast.readthedocs.io">Documentation</a>
+    <a href="https://colab-assist.readthedocs.io">Documentation</a>
   <span> · </span>
-    <a href="https://github.com/dd-n-kk/colast/issues/">Issues</a>
+    <a href="https://github.com/dd-n-kk/colab-assist/issues/">Issues</a>
   <span> · </span>
-    <a href="https://pypi.org/project/colast/">PyPI</a>
+    <a href="https://pypi.org/project/colab-assist/">PyPI</a>
   </h4>
 </div>
 
 
 ## About
 
-- __colast__ is a small package that shares utility functions
+- __colab-assist__ is a small package that shares utility functions
   I find useful for my development workflows on [Google Colab](https://colab.google).
 
 - Actually, this is also a semi-mock project that I use to learn Python open-source development.
-  [Feedbacks, guidance, and feature suggestions](https://github.com/dd-n-kk/colast/issues/)
+  [Feedbacks, guidance, and feature suggestions](https://github.com/dd-n-kk/colab-assist/issues/)
   are much appreciated!
 
 
@@ -38,7 +38,7 @@
 
 4. On Colab:
     ```py
-    import colast as A
+    import colab_assist as A
     ```
 
     - Install → experiment → push → resintall:
@@ -82,32 +82,32 @@
 
 ## Dependencies & Installation
 
-- Although currently colast lists no dependency,
+- Although currently colab-assist lists no dependency,
   it is intended to __only be installed and used in a Google Colab environment__.
   The reason not to explicitly list dependencies for now is that
   at least one depedency ([`google-colab`](https://github.com/googlecolab/colabtools))
   is bespoke for Colab and not hosted on PyPI.
-  However, colast is designed to install and run just fine on a fresh Colab instance.
+  However, colab-assist is designed to install and run just fine on a fresh Colab instance.
 
-- You can install colast very quickly with the pre-installed uv on Colab:
+- You can install colab-assist very quickly with the pre-installed uv on Colab:
   ``` { .yaml .copy }
-  !uv pip install --system -qU colast
+  !uv pip install --system -qU colab-assist
   ```
   Or with pip:
   ``` { .yaml .copy }
-  %pip install -qU colast
+  %pip install -qU colab-assist
   ```
 
-- This package is currently (and will strive to be) a single-file package.
+- This package is currently a single-file package.
   Therefore you may use it quick and dirty by just downloading the module file:
   ``` { .yaml .copy }
-  !wget -q https://raw.githubusercontent.com/dd-n-kk/colast/master/src/colast/colast.py
+  !wget -q https://raw.githubusercontent.com/dd-n-kk/colab-assist/master/src/colab_assist/colab_assist.py
   ```
 
 
 ## License
 
-- [MIT license](https://github.com/dd-n-kk/colast/blob/main/LICENSE)
+- [MIT license](https://github.com/dd-n-kk/colab-assist/blob/main/LICENSE)
 
 
 ## Acknowledgements

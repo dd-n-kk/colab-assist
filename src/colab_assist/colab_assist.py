@@ -56,7 +56,7 @@ def install(*packages: str, timeout: int | None = 60) -> None:
 
     Examples:
         ```py
-        import colast as A
+        import colab_assist as A
         A.install('polars')
         A.install('numpy==2.2.0', 'scipy', timeout=None)
         ```
@@ -92,10 +92,10 @@ def install_gh(
     """Install or update a package hosted in a GitHub repository with uv.
 
     - This function is mainly for (re)installing on Colab your in-development GitHub repository.
-        After reinstallation, use [`reload()`][colast.reload] or
-        [`restart()`][colast.restart] for the update to take effect.
+        After reinstallation, use [`reload()`][colab_assist.reload] or
+        [`restart()`][colab_assist.restart] for the update to take effect.
 
-    - For accessing your private GitHub repository, colast currently authenticates with
+    - For accessing your private GitHub repository, colab-assist currently authenticates with
         [personal access tokens](https://is.gd/qWZkuT) (PATs).
 
     - Currently the recommended way to manage PATs on Colab is via [Colab Secrets](
@@ -131,7 +131,7 @@ def install_gh(
 
     Examples:
         ```py
-        import colast as A
+        import colab_assist as A
         A.install_gh("me/my_private_repo", "dev", secret="my_secret")
         ```
     """
@@ -165,7 +165,7 @@ def clone_gh(
 ) -> None:
     """Clone a GitHub repository and optionally make it importable if it is a Python package.
 
-    - See [`install_gh()`][colast.install_gh] for details on GitHub authentication.
+    - See [`install_gh()`][colab_assist.install_gh] for details on GitHub authentication.
 
     - By default, this function just clones the GitHub repository into a subdirectory
         in `/content/repos/`.
@@ -193,11 +193,11 @@ def clone_gh(
                 Notable implications include:
 
                 - The cloned package is immediately importable without needing a session restart.
-                - Changes in the clone (e.g. by [`pull_gh()`][colast.pull_gh])
-                    can take effect via [`reload()`][colast.reload];
+                - Changes in the clone (e.g. by [`pull_gh()`][colab_assist.pull_gh])
+                    can take effect via [`reload()`][colab_assist.reload];
                     a session restart is not mandatory.
-                - If a Colab session restart is triggered by [`restart()`][colast.restart],
-                    `colast` module will try to recover `sys.path` upon the next import.
+                - If a Colab session restart is triggered by [`restart()`][colab_assist.restart],
+                    `colab_assist` module will try to recover `sys.path` upon the next import.
                     But otherwise you will need to manually re-add the top-module directory
                     to `sys.path` after a session restart.
 
@@ -211,7 +211,7 @@ def clone_gh(
 
                 - Currently an editable install seems to require a session restart to take effect.
                 - But after the installation, changes in the clone can take effect
-                    via [`reload()`][colast.reload]; a session restart is not mandatory.
+                    via [`reload()`][colab_assist.reload]; a session restart is not mandatory.
                 - Unlike `sys.path`, editable install is not reset by session restarts.
 
             - `q` for _quiet_:
@@ -235,7 +235,7 @@ def clone_gh(
 
     Examples:
         ```py
-        import colast as A
+        import colab_assist as A
         A.clone_gh("me/my_public_repo", opt="eq")
         ```
     """
@@ -354,7 +354,7 @@ def reload(obj: object) -> object:
 
     Examples:
         ```py
-        import colast as A
+        import colab_assist as A
         from my_pkg import my_func, MyClass
 
         # ... (Behavior before update)
@@ -453,7 +453,7 @@ def restart() -> None:
         However, as long as the runtime is not deleted, the installed packages,
         files in the virtual disk, and Google Drive (if mounted) are preserved.
         This function does some extra bookkeeping so that certain session states
-        can be recovered upon importing `colast` in the next session.
+        can be recovered upon importing `colab_assist` in the next session.
     """
 
     _save_state()
