@@ -3,15 +3,16 @@
   <p>
     Google Colab workflow utilities
   </p>
-
-  <h4>
-    <a href="https://colab-assist.readthedocs.io">Documentation</a>
-  <span> · </span>
-    <a href="https://github.com/dd-n-kk/colab-assist/issues/">Issues</a>
-  <span> · </span>
-    <a href="https://pypi.org/project/colab-assist/">PyPI</a>
-  </h4>
 </div>
+
+---
+
+[![PyPI](https://img.shields.io/pypi/v/colab-assist.svg?style=for-the-badge)](
+https://pypi.org/project/colab-assist)
+[![Documentation](https://img.shields.io/readthedocs/colab-assist.svg?style=for-the-badge)](
+https://colab-assist.readthedocs.io)
+[![Issues](https://img.shields.io/github/issues/dd-n-kk/colab-assist.svg?style=for-the-badge)](
+https://github.com/dd-n-kk/colab-assist/issues)
 
 
 ## About
@@ -116,4 +117,5 @@
 - [MkDocs](https://github.com/mkdocs/mkdocs)
 - [Material for MkDocs](https://github.com/squidfunk/mkdocs-material)
 - [mkdocstrings](https://github.com/mkdocstrings/mkdocstrings)
+- [shields](https://github.com/badges/shields)
 - [Awesome Readme Template](https://github.com/Louis3797/awesome-readme-template)
