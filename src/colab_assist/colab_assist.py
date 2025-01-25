@@ -4,6 +4,7 @@ __all__ = (
     "clone_gh",
     "pull_gh",
     "reload",
+    "edit",
     "download",
     "restart",
     "mount",
@@ -26,7 +27,7 @@ from types import ModuleType
 from urllib.parse import urlparse
 
 import requests
-from google.colab import drive, runtime, userdata  # type: ignore
+from google.colab import drive, files, runtime, userdata  # type: ignore
 from IPython.core.getipython import get_ipython
 from tqdm.auto import tqdm
 
@@ -389,6 +390,39 @@ def reload(obj: object) -> object:
         return obj
 
     return getattr(importlib.reload(sys.modules[module_name]), name)
+
+
+def edit(path: str, opt: str = "") -> None:
+    """Open an editor tab for a file.
+
+    - This function wraps `google.colab.files.view()`,
+        which currently does not support editing certain file types, e.g. `.md`.
+
+    Args:
+        path: Path to the text file to edit.
+
+        opt: A string as an order-agnostic set of single-letter option flags.
+            An option is enabled if and only if its corresponding letter is in the string.
+
+            - `c` for _create_:
+                By default, `edit()` does not create a new file.
+                This option creates a blank file (and all its parent directories if necessary)
+                if `path` does not exist.
+    """
+
+    if not os.path.exists(path):
+        if "c" in opt:
+            if parent := os.path.dirname(path):
+                os.makedirs(parent, exist_ok=True)
+            open(path, "w").close()  # os.mknod() is not implemented for Google Drive.
+        else:
+            print(f"{path} does not exist.")
+            return
+
+    if os.path.isfile(path):
+        files.view(path)
+    else:
+        print(f"{path} is not a file.")
 
 
 def download(url: str, path: str | None = None, *, chunk_size: int = 131072) -> str | None:
