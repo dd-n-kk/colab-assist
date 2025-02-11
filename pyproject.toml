@@ -25,6 +25,8 @@ dev = [
     "ipykernel",
     "mkdocs-material",
     "mkdocstrings-python",
+    "pytest",
+    "pytest-cov",
     "tqdm",
 ]
 
