@@ -16,7 +16,6 @@ __all__ = (
 
 import importlib
 import os
-import pickle
 import shlex
 import shutil
 import subprocess
@@ -27,19 +26,15 @@ from types import ModuleType
 from urllib.parse import urlparse
 
 import requests
-from google.colab import drive, files, runtime, userdata  # type: ignore
 from IPython.core.getipython import get_ipython
 from tqdm.auto import tqdm
+
+from colab_assist import _colab
 
 _COLAB_ROOT = "/content/"
 _DRIVE_MNTPT = "/content/drive/"
 _DRIVE_ROOT = "/content/drive/MyDrive/"
 _REPOS_ROOT = "/content/repos/"
-_STATE_PATH = "/content/.colab_state"
-
-_git_updated = False
-_uv_updated = False
-_sys_path_extensions = []
 
 
 def install(*packages: str, timeout: int | None = 60) -> None:
@@ -142,7 +137,7 @@ def install_gh(
     suffix = f"{repo}@{branch}" if branch else repo
     try:
         result = subprocess.run(
-            ("uv", "pip", "install", "--system", "-qU", shlex.quote(f"{prefix}{suffix}")),
+            ("uv", "pip", "install", "--system", "-Uq", shlex.quote(f"{prefix}{suffix}")),
             capture_output=True,
             encoding="utf-8",
             timeout=timeout,
@@ -274,10 +269,10 @@ def clone_gh(
     if "p" in opt:
         if os.path.isdir(src_path := os.path.join(repo_path, "src")):
             sys.path.append(src_path)
-            _sys_path_extensions.append(src_path)
+            _colab._sys_path_extensions.append(src_path)
         else:
             sys.path.append(repo_path)
-            _sys_path_extensions.append(repo_path)
+            _colab._sys_path_extensions.append(repo_path)
         return
 
     if "e" in opt:
@@ -420,7 +415,7 @@ def edit(path: str, opt: str = "") -> None:
             return
 
     if os.path.isfile(path):
-        files.view(path)
+        _colab.files.view(path)
     else:
         print(f"{path} is not a file.")
 
@@ -490,7 +485,7 @@ def restart() -> None:
         can be recovered upon importing `colab_assist` in the next session.
     """
 
-    _save_state()
+    _colab._save_state()
 
     if (ishell := get_ipython()) is None:
         print("Global interactive shell not found. Try `exit()` or `Runtime -> Restart session`.")
@@ -505,21 +500,21 @@ def mount(force: bool = False) -> None:
         force: Option to force remounting if Google Drive is already mounted.
     """
 
-    drive.mount(_DRIVE_MNTPT, force_remount=force)
+    _colab.drive.mount(_DRIVE_MNTPT, force_remount=force)
 
 
 def unmount() -> None:
     """Flush and unmount Google Drive."""
 
-    drive.flush_and_unmount()
+    _colab.drive.flush_and_unmount()
 
 
 def end() -> None:
     """Terminate the Colab runtime after some cleanup operations."""
 
     _clear_repos()
-    drive.flush_and_unmount()
-    runtime.unassign()
+    _colab.drive.flush_and_unmount()
+    _colab.runtime.unassign()
 
 
 def update_git(timeout: int | None = 90) -> None:
@@ -533,8 +528,7 @@ def update_git(timeout: int | None = 90) -> None:
             - `None`: No timeout.
     """
 
-    global _git_updated
-    if _git_updated:
+    if _colab._git_updated:
         return
 
     try:
@@ -560,7 +554,7 @@ def _clear_repos() -> None:
 
 def _get_auth(secret: str | None = None, prompt: bool = True) -> str:
     if secret:
-        return userdata.get(secret)
+        return _colab.userdata.get(secret)
 
     if prompt:
         return getpass("Authentication (or enter nothing to skip): ")
@@ -582,7 +576,7 @@ def _get_resp_reason(resp: requests.Response) -> str:
 def _install_editable(path: str) -> None:
     try:
         result = subprocess.run(
-            ("uv", "pip", "install", "--system", "-qe", shlex.quote(path)),
+            ("uv", "pip", "install", "--system", "-eq", shlex.quote(path)),
             capture_output=True,
             encoding="utf-8",
             timeout=30,
@@ -592,20 +586,6 @@ def _install_editable(path: str) -> None:
     else:
         if result.returncode != 0:
             print(result.stderr, end="")
-
-
-def _load_state() -> None:
-    global _git_updated, _uv_updated, _sys_path_extensions
-    if os.path.isfile(_STATE_PATH):
-        with open(_STATE_PATH, "rb") as file:
-            state = pickle.load(file)
-            if "git_updated" in state:
-                _git_updated = state["git_updated"]
-            if "uv_updated" in state:
-                _uv_updated = state["uv_updated"]
-            if "sys_path_extensions" in state:
-                _sys_path_extensions = state["sys_path_extensions"]
-                sys.path.extend(_sys_path_extensions)
 
 
 def _reinstall(path: str) -> None:
@@ -623,39 +603,5 @@ def _reinstall(path: str) -> None:
             print(result.stderr, end="")
 
 
-def _save_state() -> None:
-    with open(_STATE_PATH, "wb") as file:
-        pickle.dump(
-            {
-                "git_updated": _git_updated,
-                "uv_updated": _uv_updated,
-                "sys_path_extensions": _sys_path_extensions,
-            },
-            file,
-            pickle.HIGHEST_PROTOCOL,
-        )
-
-
-def _update_uv() -> None:
-    global _uv_updated
-    if _uv_updated:
-        return
-
-    try:
-        result = subprocess.run(
-            ("uv", "pip", "install", "--system", "-q", "uv"),
-            capture_output=True,
-            encoding="utf-8",
-            timeout=10,
-        )
-    except subprocess.TimeoutExpired as exc:
-        print(exc)
-    else:
-        if result.returncode != 0:
-            print(result.stderr, end="")
-        else:
-            _uv_updated = True
-
-
-_load_state()
-_update_uv()
+_colab._load_state()
+_colab._update_uv()
