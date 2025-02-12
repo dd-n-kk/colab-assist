@@ -8,6 +8,7 @@ repo_name: 'dd-n-kk/colab-assist'
 nav:
 - README.md
 - API: api.md
+- Releases: releases.md
 
 
 theme:
@@ -21,6 +22,7 @@ theme:
 
   features:
   - navigation.prune
+  - navigation.sections
   - navigation.tabs
   - navigation.tabs.sticky
   - navigation.top
@@ -85,6 +87,7 @@ markdown_extensions:
 - attr_list
 - toc:
     permalink: true
+    toc_depth: 3
 
 # Python Markdown Extensions
 - pymdownx.highlight
