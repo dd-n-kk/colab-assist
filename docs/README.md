@@ -7,12 +7,13 @@
 
 ---
 
-[![PyPI](https://img.shields.io/pypi/v/colab-assist.svg?style=for-the-badge)](
-https://pypi.org/project/colab-assist)
-[![Documentation](https://img.shields.io/readthedocs/colab-assist.svg?style=for-the-badge)](
-https://colab-assist.readthedocs.io)
-[![Issues](https://img.shields.io/github/issues/dd-n-kk/colab-assist.svg?style=for-the-badge)](
-https://github.com/dd-n-kk/colab-assist/issues)
+[![Test PyPI][pypi-badge]][pypi]
+[![Documentation][readthedocs-badge]][readthedocs]
+[![Issues][issues-badge]][issues]
+
+[![CI workflow status][ci-workflow-badge]][ci-workflow]
+[![Release workflow status][release-workflow-badge]][release-workflow]
+[![Test coverage][codecov-badge]][codecov]
 
 
 ## About
@@ -113,9 +114,24 @@ https://github.com/dd-n-kk/colab-assist/issues)
 
 ## Acknowledgements
 
+- [Google Colaboratory](https://github.com/googlecolab/colabtools)
 - [uv](https://github.com/astral-sh/uv)
 - [MkDocs](https://github.com/mkdocs/mkdocs)
 - [Material for MkDocs](https://github.com/squidfunk/mkdocs-material)
 - [mkdocstrings](https://github.com/mkdocstrings/mkdocstrings)
+- [git-cliff](https://github.com/orhun/git-cliff)
 - [shields](https://github.com/badges/shields)
-- [Awesome Readme Template](https://github.com/Louis3797/awesome-readme-template)
+
+
+[pypi-badge]: https://img.shields.io/pypi/v/colab-assist?style=for-the-badge&logo=pypi&logoColor=white&label=PYPI
+[pypi]: https://pypi.org/project/colab-assist
+[readthedocs-badge]: https://img.shields.io/readthedocs/colab-assist?style=for-the-badge&logo=readthedocs&logoColor=white
+[readthedocs]: https://colab-assist.readthedocs.io
+[issues-badge]: https://img.shields.io/github/issues/dd-n-kk/colab-assist?style=for-the-badge&logo=github&logoColor=white
+[issues]: https://github.com/dd-n-kk/colab-assist/issues
+[ci-workflow-badge]: https://img.shields.io/github/actions/workflow/status/dd-n-kk/colab-assist/ci.yaml?style=flat-square&logo=pytest&logoColor=white&label=CI
+[ci-workflow]: https://github.com/dd-n-kk/colab-assist/actions/workflows/ci.yaml
+[release-workflow-badge]: https://img.shields.io/github/actions/workflow/status/dd-n-kk/colab-assist/release.yaml?style=flat-square&logo=pypi&logoColor=white&label=Build
+[release-workflow]: https://github.com/dd-n-kk/colab-assist/actions/workflows/release.yaml
+[codecov-badge]: https://img.shields.io/codecov/c/github/dd-n-kk/colab-assist?style=flat-square&logo=codecov&logoColor=white&label=Coverage
+[codecov]: https://app.codecov.io/gh/dd-n-kk/colab-assist
