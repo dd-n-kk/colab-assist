@@ -1,6 +1,6 @@
 __all__ = (
     "install",
-    "install_gh",
+    "update",
     "clone_gh",
     "pull_gh",
     "reload",
@@ -37,14 +37,37 @@ _DRIVE_ROOT = "/content/drive/MyDrive/"
 _REPOS_ROOT = "/content/repos/"
 
 
-def install(*packages: str, timeout: int | None = 60) -> None:
-    """Install or update package(s) with uv.
+def install(
+    *packages: str,
+    auth: str | None = None,
+    secret: str | None = None,
+    timeout: int | None = 60,
+) -> None:
+    """Install package(s) using uv.
+
+    - This function uses the uv command `uv pip install --system --refresh ⟨packages⟩`.
+        Therefore, packages preinstalled on Colab will not be updated
+        as long as they satisfy the minimum version requirements.
+        This conservative behavior reduces the risk of breaking the Colab environment.
+        Use [`update()`][colab_assist.update] instead to force updating packages or dependencies.
 
     Args:
-        packages: Specification(s) of the package(s) to install or update.
+        packages: [Specification(s)](https://docs.astral.sh/uv/pip/packages/#installing-a-package)
+            of the package(s) to install.
 
-            - See [uv docs](https://docs.astral.sh/uv/pip/packages/#installing-a-package)
-                for ways to specify packages.
+        opt: A string as an order-agnostic set of single-letter option flags.
+            An option is enabled if and only if its corresponding letter is in the string.
+
+            - `u` for _upgrade_:
+                This option is shadowed by, and should not be used together with, `r`.
+                This option uses the uv command `uv pip install --system --upgrade`,
+                which will upgrade outdated packages and dependencies to the latest versions.
+
+            - `r` for _reinstall_:
+                This option shadows, and should not be used together with, `u`.
+                This option uses the uv command `uv pip install --system --reinstall`,
+                which will force reinstalling from scratch the latest versions
+                of the packages and all their dependencies.
 
         timeout: Timeout in seconds for the spawned subprocess.
 
@@ -53,7 +76,7 @@ def install(*packages: str, timeout: int | None = 60) -> None:
     Examples:
         ```py
         import colab_assist as A
-        A.install('polars')
+        A.install('polars', opt="u")
         A.install('numpy==2.2.0', 'scipy', timeout=None)
         ```
     """
@@ -61,10 +84,12 @@ def install(*packages: str, timeout: int | None = 60) -> None:
     if not packages:
         return
 
-    packages = tuple(shlex.quote(package) for package in packages)
+    auth = _get_auth(auth, secret)
+
     try:
         result = subprocess.run(
-            shlex.split(f"uv pip install --system -qU {' '.join(packages)}"),
+            ("uv", "pip", "install", "--system", "--refresh", "-q")
+            + tuple(_parse_package_spec(p, auth) for p in packages),
             capture_output=True,
             encoding="utf-8",
             timeout=timeout,
@@ -76,68 +101,34 @@ def install(*packages: str, timeout: int | None = 60) -> None:
             print(result.stderr, end="")
 
 
-def install_gh(
-    repo: str,
-    branch: str | None = None,
-    *,
-    opt: str = "",
+def update(
+    *packages: str,
     auth: str | None = None,
     secret: str | None = None,
     timeout: int | None = 60,
 ) -> None:
-    """Install or update a package hosted in a GitHub repository with uv.
+    """Update package(s) using uv.
 
-    - This function is mainly for (re)installing on Colab your in-development GitHub repository.
-        After reinstallation, use [`reload()`][colab_assist.reload] or
-        [`restart()`][colab_assist.restart] for the update to take effect.
-
-    - For accessing your private GitHub repository, colab-assist currently authenticates with
-        [personal access tokens](https://is.gd/qWZkuT) (PATs).
-
-    - Currently the recommended way to manage PATs on Colab is via [Colab Secrets](
-        https://stackoverflow.com/a/77737451). Use a Colab Secret by passing its name to `secret`.
-
-    - You can also load your PAT into a variable in your preferred way and pass it to `auth`.
-        Otherwise, by default a skippable prompt will show up for pasting your PAT.
+    - This is equivalent to using [`install()`][colab_assist.install] with `opt="u"`.
 
     Args:
-        repo: Identifier of the GitHub repository, in the form `⟨owner⟩/⟨repo_name⟩`.
-
-        branch: Name of the branch to install from.
-
-            - `None`: Use the repository's default branch.
-
-        opt: A string as an order-agnostic set of single-letter option flags.
-            An option is enabled if and only if its corresponding letter is in the string.
-
-            - `q` for _quiet_:
-                Suppress the skippable prompt for GitHub authentication info
-                when neither `auth` nor `secret` is provided.
-                The function will then assume GitHub authentication is not required.
-
-        auth: Your GitHub authentication info.
-
-            - If `auth` is provided, `secret` is ignored.
-
-        secret: Name of the Colab Secret storing your GitHub authentication info.
+        packages: [Specification(s)](https://docs.astral.sh/uv/pip/packages/#installing-a-package)
+            of the package(s) to upgrade.
 
         timeout: Timeout in seconds for the spawned subprocess.
 
             - `None`: No timeout.
-
-    Examples:
-        ```py
-        import colab_assist as A
-        A.install_gh("me/my_private_repo", "dev", secret="my_secret")
-        ```
     """
 
-    auth = auth or _get_auth(secret, "q" not in opt)
-    prefix = f"git+https://{auth}@github.com/" if auth else "git+https://github.com/"
-    suffix = f"{repo}@{branch}" if branch else repo
+    if not packages:
+        return
+
+    auth = _get_auth(auth, secret)
+
     try:
         result = subprocess.run(
-            ("uv", "pip", "install", "--system", "-Uq", shlex.quote(f"{prefix}{suffix}")),
+            ("uv", "pip", "install", "--system", "-U", "-q")
+            + tuple(_parse_package_spec(p, auth) for p in packages),
             capture_output=True,
             encoding="utf-8",
             timeout=timeout,
@@ -183,7 +174,7 @@ def clone_gh(
                 This option assumes that the GitHub repository hosts a Python package,
                 and will add the top-level module directory of the clone to `sys.path`.
                 This allows importing the package without installing it,
-                which may be useful when the many packages pre-installed on Colab
+                which may be useful when the many packages preinstalled on Colab
                 cause distracting dependency issues.
 
                 Notable implications include:
@@ -242,7 +233,7 @@ def clone_gh(
         print(f"{repo_path} already exists. Consider `pull_gh('{dir_name or repo}')` instead?")
         return
 
-    if auth := auth or _get_auth(secret, "q" not in opt):
+    if auth := auth or _get_auth(auth, secret):
         url = shlex.quote(f"https://{auth}@github.com/{owner}/{repo}.git")
     else:
         url = shlex.quote(f"https://github.com/{owner}/{repo}.git")
@@ -520,7 +511,7 @@ def end() -> None:
 def update_git(timeout: int | None = 90) -> None:
     """Update Git.
 
-    - With the current implementation (using APT), the update process is relatively long (~30s).
+    - With the current implementation (using APT), the update process is relatively long (30–60s).
 
     Args:
         timeout: Timeout in seconds for the spawned subprocess.
@@ -552,14 +543,17 @@ def _clear_repos() -> None:
     shutil.rmtree(_REPOS_ROOT, ignore_errors=True)
 
 
-def _get_auth(secret: str | None = None, prompt: bool = True) -> str:
-    if secret:
+def _get_auth(auth: str | None, secret: str | None) -> str:
+    if secret is not None:
         return _colab.userdata.get(secret)
 
-    if prompt:
+    if auth is None:
+        return ""
+
+    if auth == "?":
         return getpass("Authentication (or enter nothing to skip): ")
 
-    return ""
+    return auth
 
 
 def _get_resp_reason(resp: requests.Response) -> str:
@@ -588,19 +582,14 @@ def _install_editable(path: str) -> None:
             print(result.stderr, end="")
 
 
-def _reinstall(path: str) -> None:
-    try:
-        result = subprocess.run(
-            ("uv", "pip", "install", "--system", "--reinstall", "-q", shlex.quote(path)),
-            capture_output=True,
-            encoding="utf-8",
-            timeout=30,
-        )
-    except subprocess.TimeoutExpired as exc:
-        print(exc)
-    else:
-        if result.returncode != 0:
-            print(result.stderr, end="")
+def _parse_package_spec(package: str, auth: str) -> str:
+    if package.startswith("gh:"):
+        if auth:
+            package = f"git+https://{auth}@github.com/{package[3:]}"
+        else:
+            package = f"git+https://github.com/{package[3:]}"
+
+    return shlex.quote(package)
 
 
 _colab._load_state()
