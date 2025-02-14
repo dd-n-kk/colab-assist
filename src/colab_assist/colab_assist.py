@@ -1,6 +1,7 @@
 __all__ = (
     "install",
     "update",
+    "reinstall",
     "clone_gh",
     "pull_gh",
     "reload",
@@ -22,6 +23,7 @@ import subprocess
 import sys
 from email.message import EmailMessage
 from getpass import getpass
+from itertools import chain
 from types import ModuleType
 from urllib.parse import urlparse
 
@@ -39,35 +41,54 @@ _REPOS_ROOT = "/content/repos/"
 
 def install(
     *packages: str,
+    options: str = "",
     auth: str | None = None,
     secret: str | None = None,
     timeout: int | None = 60,
 ) -> None:
     """Install package(s) using uv.
 
-    - This function uses the uv command `uv pip install --system --refresh ⟨packages⟩`.
-        Therefore, packages preinstalled on Colab will not be updated
-        as long as they satisfy the minimum version requirements.
-        This conservative behavior reduces the risk of breaking the Colab environment.
-        Use [`update()`][colab_assist.update] instead to force updating packages or dependencies.
+    - Essentially, this function installs package(s) using the uv command:
+        ```
+        uv pip install --system ⟨options⟩ -- ⟨packages⟩
+        ```
+        Therefore:
+        - Various uv-supported [package specifiers](
+            https://docs.astral.sh/uv/pip/packages/#installing-a-package) can be used.
+        - Additional [options](https://docs.astral.sh/uv/reference/cli/#uv-pip-install)
+            such as `"--refresh -v"` can be set via the `options` parameter.
+            See also convenience aliases provided by colab-assist such as
+            [`update()`][colab_assist.update] and [`reinstall()`][colab_assist.reinstall].
+
+    - Additionally, colab-assist provides conveniences for installing a GitHub-hosted package:
+        - You can use `gh:⟨owner⟩/⟨repo⟩` to specify a GitHub repository
+            or use `gh:⟨owner⟩/⟨repo⟩@⟨ref⟩` to further specify a branch, tag, or commit.
+        - Authentication to a private repository is supported with a [personal access token (PAT)](
+            https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
+            Currently the recommended way to manage PATs on Colab is using [Colab Secrets](
+            https://stackoverflow.com/a/77737451).
+            Use a Colab Secret by passing its name to `secret`.
+            Alternatively, load your PAT in your preferred way and pass it to `auth`.
+            You may also set `auth="$"` to spawn a [`getpass`](
+            https://docs.python.org/3/library/getpass.html) prompt for inputting your PAT.
+            At most one PAT is accepted via `auth` or `secret` per invocation of `install()`,
+            and the same PAT is applied to all `gh:` specifiers if there are more than one.
+            If neither `auth` nor `secret` is provided, any `gh:` specifier is assumed
+            to refer to a public repository.
 
     Args:
-        packages: [Specification(s)](https://docs.astral.sh/uv/pip/packages/#installing-a-package)
+        packages: [Specifier(s)](https://docs.astral.sh/uv/pip/packages/#installing-a-package)
             of the package(s) to install.
 
-        opt: A string as an order-agnostic set of single-letter option flags.
-            An option is enabled if and only if its corresponding letter is in the string.
+        options: Additional [options](https://docs.astral.sh/uv/reference/cli/#uv-pip-install)
+            for the `uv pip install` command.
 
-            - `u` for _upgrade_:
-                This option is shadowed by, and should not be used together with, `r`.
-                This option uses the uv command `uv pip install --system --upgrade`,
-                which will upgrade outdated packages and dependencies to the latest versions.
+        auth: GitHub authentication info.
 
-            - `r` for _reinstall_:
-                This option shadows, and should not be used together with, `u`.
-                This option uses the uv command `uv pip install --system --reinstall`,
-                which will force reinstalling from scratch the latest versions
-                of the packages and all their dependencies.
+            - If `secret` is provided, `auth` is ignored.
+            - `"$"`: Spawn a skippable prompt for inputting GitHub authentication info.
+
+        secret: Name of the Colab Secret storing your GitHub authentication info.
 
         timeout: Timeout in seconds for the spawned subprocess.
 
@@ -76,8 +97,13 @@ def install(
     Examples:
         ```py
         import colab_assist as A
-        A.install('polars', opt="u")
-        A.install('numpy==2.2.0', 'scipy', timeout=None)
+
+        # Install the latest versions of DuckDB and Polars.
+        A.install("duckdb", "polars", options="-U")
+
+        # Use the PAT stored in the Colab Secret named `my-token` to install the Python package
+        # hosted in the `feat/foo` branch of the private GitHub repository `me/my-repo`.
+        A.install("gh:me/my-repo@feat/foo", secret="my-token")
         ```
     """
 
@@ -88,8 +114,14 @@ def install(
 
     try:
         result = subprocess.run(
-            ("uv", "pip", "install", "--system", "--refresh", "-q")
-            + tuple(_parse_package_spec(p, auth) for p in packages),
+            tuple(
+                chain(
+                    ("uv", "pip", "install", "--system"),
+                    shlex.split(options),
+                    ("--",),
+                    (_parse_package_spec(p, auth) for p in packages),
+                )
+            ),
             capture_output=True,
             encoding="utf-8",
             timeout=timeout,
@@ -103,41 +135,80 @@ def install(
 
 def update(
     *packages: str,
+    options: str = "",
     auth: str | None = None,
     secret: str | None = None,
     timeout: int | None = 60,
 ) -> None:
-    """Update package(s) using uv.
+    """Update package(s) and dependencies using uv.
 
-    - This is equivalent to using [`install()`][colab_assist.install] with `opt="u"`.
+    - This is a convenience alias of calling [`install()`][colab_assist.install]
+        with `"--upgrade"` included in `options`.
+        By default, `uv pip install` is relatively conservative:
+        Already installed packages will not be updated unless an update is required to
+        satisfy an explicit version restriction or to resolve an incompatibility.
+        With `--upgrade`, uv will always try to update the packages and their dependencies
+        to the latest versions, but this also increases the risk of breaking the Colab environment.
 
     Args:
-        packages: [Specification(s)](https://docs.astral.sh/uv/pip/packages/#installing-a-package)
-            of the package(s) to upgrade.
+        packages: [Specifier(s)](https://docs.astral.sh/uv/pip/packages/#installing-a-package)
+            of the package(s) to install.
+
+        options: Additional [options](https://docs.astral.sh/uv/reference/cli/#uv-pip-install)
+            for the `uv pip install` command.
+
+        auth: GitHub authentication info.
+
+            - If `secret` is provided, `auth` is ignored.
+            - `"$"`: Spawn a skippable prompt for inputting GitHub authentication info.
+
+        secret: Name of the Colab Secret storing your GitHub authentication info.
 
         timeout: Timeout in seconds for the spawned subprocess.
 
             - `None`: No timeout.
     """
 
-    if not packages:
-        return
+    install(*packages, options="-U " + options, auth=auth, secret=secret, timeout=timeout)
 
-    auth = _get_auth(auth, secret)
 
-    try:
-        result = subprocess.run(
-            ("uv", "pip", "install", "--system", "-U", "-q")
-            + tuple(_parse_package_spec(p, auth) for p in packages),
-            capture_output=True,
-            encoding="utf-8",
-            timeout=timeout,
-        )
-    except subprocess.TimeoutExpired as exc:
-        print(exc)
-    else:
-        if result.returncode != 0:
-            print(result.stderr, end="")
+def reinstall(
+    *packages: str,
+    options: str = "",
+    auth: str | None = None,
+    secret: str | None = None,
+    timeout: int | None = 60,
+) -> None:
+    """Reinstall package(s) and dependencies using uv.
+
+    - This is a convenience alias of calling [`install()`][colab_assist.install]
+        with `"--reinstall"` included in `options`.
+        `--reinstall` is more drastic than [`--upgrade`][colab_assist.update]:
+        It forces reinstalling packages and all dependencies even if they are already
+        the latest versions. However, according to the [uv documentation](
+        https://docs.astral.sh/uv/concepts/projects/init/#projects-with-extension-modules),
+        `--reinstall` is required for changes in non-Python extension code to take effect.
+
+    Args:
+        packages: [Specifier(s)](https://docs.astral.sh/uv/pip/packages/#installing-a-package)
+            of the package(s) to install.
+
+        options: Additional [options](https://docs.astral.sh/uv/reference/cli/#uv-pip-install)
+            for the `uv pip install` command.
+
+        auth: GitHub authentication info.
+
+            - If `secret` is provided, `auth` is ignored.
+            - `"$"`: Spawn a skippable prompt for inputting GitHub authentication info.
+
+        secret: Name of the Colab Secret storing your GitHub authentication info.
+
+        timeout: Timeout in seconds for the spawned subprocess.
+
+            - `None`: No timeout.
+    """
+
+    install(*packages, options="--reinstall " + options, auth=auth, secret=secret, timeout=timeout)
 
 
 def clone_gh(
@@ -550,7 +621,7 @@ def _get_auth(auth: str | None, secret: str | None) -> str:
     if auth is None:
         return ""
 
-    if auth == "?":
+    if auth == "$":
         return getpass("Authentication (or enter nothing to skip): ")
 
     return auth
