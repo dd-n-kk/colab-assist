@@ -420,7 +420,7 @@ def reload(obj: object) -> object:
     return getattr(importlib.reload(sys.modules[module_name]), name)
 
 
-def edit(path: str, opt: str = "") -> None:
+def edit(path: str, *, x: str = "") -> None:
     """Open an editor tab for a file.
 
     - This function wraps `google.colab.files.view()`,
@@ -429,7 +429,7 @@ def edit(path: str, opt: str = "") -> None:
     Args:
         path: Path to the text file to edit.
 
-        opt: A string as an order-agnostic set of single-letter option flags.
+        x: A string as an order-agnostic set of single-letter extra option flags.
             An option is enabled if and only if its corresponding letter is in the string.
 
             - `c` for _create_:
@@ -438,7 +438,7 @@ def edit(path: str, opt: str = "") -> None:
                 if `path` does not exist.
     """
     if not os.path.exists(path):
-        if "c" in opt:
+        if "c" in x:
             if parent := os.path.dirname(path):
                 os.makedirs(parent, exist_ok=True)
             open(path, "w").close()  # os.mknod() is not implemented for Google Drive.
