@@ -349,21 +349,20 @@ def reload(obj: object) -> object:
     """Reimport a module, function, or class.
 
     - This function internally uses [`importlib.reload()`](
-        https://docs.python.org/3/library/importlib.html#importlib.reload)
-        to reimport modules, and [`getattr()`](
-        https://docs.python.org/3/library/functions.html#getattr)
+        https://docs.python.org/3/library/importlib.html#importlib.reload) to reimport modules,
+        and [`getattr()`](https://docs.python.org/3/library/functions.html#getattr)
         to retrieve attributes from reimported modules.
         So the limitations and caveats of `importlib.reload()` persist. In particular:
 
-        - Reloading a module does _not_ automatically reload its parent modules or submodules.
+        - Reloading a module does not automatically reload its parent modules or submodules.
         - Names defined in the old version of the module but not in the new version
-            (e.g. when an attribute is removed in an update) are _not_ automatically deleted.
+            (e.g. when an attribute is removed in an update) are not automatically deleted.
         - This function can correctly reload a non-module object
             only if the object has valid `__name__` and `__module__` attributes.
             So, usually, functions and classes are the only directly reloadable non-modules.
             However, after a module is reimported,
             its non-module attributes can be updated via `import` statements.
-        - Reloading a class does _not_ affect previously created instances.
+        - Reloading a class does not affect previously created instances.
         - To properly reload a non-module, the return value must be captured.
             It is recommended to always use the `xxx = reload(xxx)` pattern.
 
@@ -387,16 +386,16 @@ def reload(obj: object) -> object:
         import colab_assist as A
         from my_pkg import my_func, MyClass
 
-        # ... (Behavior before update)
+        # (Behavior before update)
 
         # (Update made to the source code of `my_pkg` on GitHub)
-        A.install_gh("my_name", "my_pkg")
+        A.install("my_name/my_pkg")
 
         my_func = A.reload(my_func)
         MyClass = A.reload(MyClass)
         my_obj = MyClass()
 
-        # ... (Updated behavior)
+        # (Updated behavior)
         ```
     """
     if (name := getattr(obj, "__name__", None)) is None:
@@ -547,7 +546,7 @@ def end() -> None:
 def update_git(timeout: int | None = 90) -> None:
     """Update Git.
 
-    - With the current implementation (using APT), the update process is relatively long (~30s).
+    - Current implementation uses APT, so the update process is relatively slow (about 1 min).
 
     Args:
         timeout: Timeout in seconds for the spawned subprocess.
