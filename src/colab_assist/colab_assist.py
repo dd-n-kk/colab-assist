@@ -2,8 +2,8 @@ __all__ = (
     "install",
     "update",
     "reinstall",
-    "clone_gh",
-    "pull_gh",
+    "clone",
+    "pull",
     "reload",
     "edit",
     "download",
@@ -156,57 +156,63 @@ def reinstall(*packages: str, o: str = "", timeout: int | None = 60) -> None:
     install(*packages, o="--reinstall " + o, timeout=timeout)
 
 
-def clone_gh(
-    repo: str,
-    branch: str | None = None,
+def clone(
+    remote: str,
+    basename: str | None = None,
     *,
-    opt: str = "",
-    dir_name: str | None = None,
-    auth: str | None = None,
-    secret: str | None = None,
+    o: str = "",
+    x: str = "",
     timeout: int | None = 60,
 ) -> None:
-    """Clone a GitHub repository and optionally make it importable if it is a Python package.
+    """Clone a remote Git repository and optionally make the Python package in it importable.
 
-    - See [`install_gh()`][colab_assist.install_gh] for details on GitHub authentication.
+    - This function is a convenience interface of the Git command
+        `git clone ⟨o⟩ -- ⟨remote⟩ "/content/repos/⟨basename⟩"`.
+        When cloning a Python package, you can enable extra options via parameter `x`
+        to automatically make the cloned package importable.
 
-    - By default, this function just clones the GitHub repository into a subdirectory
-        in `/content/repos/`.
-        If you are cloning a Python package, automatic actions to make the package importable
-        can be enabled with some options in `opt`.
+    - This function is mainly designed to clone via HTTP and work with
+        the shorthand `remote` format detailed in [`install()`][colab_assist.install]:
+        ```
+        [⟨auth⟩@][⟨host⟩/]⟨owner⟩/⟨repo⟩[@⟨branch⟩]
+        ```
+        Any unrecognized `remote` argument is assumed to be a valid
+        [Git URL](https://git-scm.com/docs/git-clone#_git_urls) and delegated to `git clone`.
 
     Args:
-        repo: Identifier of the GitHub repository, in the form `⟨owner⟩/⟨repo_name⟩`.
+        repo: Specifier of the remote Git repository to clone.
 
-        branch: Name of the branch to clone from.
+        basename: Directory name of the clone.
 
-            - `None`: Clone the history of all branches and use the default branch.
+            - `None`: Use the name of the remote repository.
 
-        opt: A string as an order-agnostic set of single-letter option flags.
+        o: Additional [options](https://git-scm.com/docs/git-clone#_options)
+            for the `git clone` command.
+
+        x: A string as an order-agnostic set of single-letter extra option flags.
             An option is enabled if and only if its corresponding letter is in the string.
 
             - `p` for _path_:
-                This option shadows, and should not be used together with, `e`.
-                This option assumes that the GitHub repository hosts a Python package,
-                and will add the top-level module directory of the clone to `sys.path`.
+                This option should not be used together with `e`.
+                This option assumes the GitHub repository hosts a Python package,
+                and will add its top-level module directory to `sys.path`.
                 This allows importing the package without installing it,
-                which may be useful when the many packages pre-installed on Colab
-                cause distracting dependency issues.
+                which may help avoiding dependency conflicts with Colab-preinstalled packages.
 
                 Notable implications include:
 
                 - The cloned package is immediately importable without needing a session restart.
-                - Changes in the clone (e.g. by [`pull_gh()`][colab_assist.pull_gh])
+                - Changes in the clone (e.g. by [`pull()`][colab_assist.pull])
                     can take effect via [`reload()`][colab_assist.reload];
                     a session restart is not mandatory.
                 - If a Colab session restart is triggered by [`restart()`][colab_assist.restart],
-                    `colab_assist` module will try to recover `sys.path` upon the next import.
+                    `colab_assist` module will try to recover `sys.path` upon import.
                     But otherwise you will need to manually re-add the top-module directory
                     to `sys.path` after a session restart.
 
             - `e` for _editable_:
-                This option is shadowed by, and should not be used together with, `p`.
-                This option assumes that the GitHub repository hosts a Python package,
+                This option should not be used together with `p`.
+                This option assumes the GitHub repository hosts a Python package,
                 and will install the clone in [editable/development mode](
                 https://setuptools.pypa.io/en/latest/userguide/development_mode.html).
 
@@ -217,21 +223,6 @@ def clone_gh(
                     via [`reload()`][colab_assist.reload]; a session restart is not mandatory.
                 - Unlike `sys.path`, editable install is not reset by session restarts.
 
-            - `q` for _quiet_:
-                Suppress the skippable prompt for GitHub authentication info
-                when neither `auth` nor `secret` is provided.
-                The function will then assume GitHub authentication is not required.
-
-        dir_name: Directory name of the clone.
-
-            - `None`: Use the repository name.
-
-        auth: Your GitHub authentication info.
-
-            - If `auth` is provided, `secret` is ignored.
-
-        secret: Name of the Colab Secret storing your GitHub authentication info.
-
         timeout: Timeout in seconds for the spawned subprocess.
 
             - `None`: No timeout.
@@ -239,32 +230,63 @@ def clone_gh(
     Examples:
         ```py
         import colab_assist as A
-        A.clone_gh("me/my_public_repo", opt="eq")
+
+        # Use the PAT stored in the Colab Secret named `my-token`
+        # to clone the `feat/foo` branch of the private GitHub repository `me/my-repo`
+        # into directory `/content/repos/foo/`, and then install the clone as an editable package.
+        A.clone("$my-token@me/my-repo@feat/foo", "foo", x="e")
         ```
     """
+    remote_rgx = (
+        r"(?:(\$?[-%+.:\w]*)@)?"  # auth
+        r"(?:\$(gh|gl|bb)/|([-a-zA-Z0-9]+\.[-.a-zA-Z0-9]+)/)?"  # host
+        r"([-\w]+)/([-.\w]+)(?:@([-./\w]+))?"  # owner/repo@branch
+    )
 
-    owner, repo = repo.split("/")
-    repo_path = os.path.join(_REPOS_ROOT, dir_name or repo)
-    if os.path.exists(repo_path):
-        print(f"{repo_path} already exists. Consider `pull_gh('{dir_name or repo}')` instead?")
-        return
+    if matched := re.fullmatch(remote_rgx, remote):
+        auth, host_tag, host_name, owner, repo, branch = matched.groups()
 
-    if auth := auth or _get_auth(secret, "q" not in opt):
-        url = shlex.quote(f"https://{auth}@github.com/{owner}/{repo}.git")
+        if os.path.exists(repo_path := os.path.join(_REPOS_ROOT, basename or repo)):
+            print(f"{repo_path} already exists. Consider `pull('{basename or repo}')` instead?")
+            return
+
+        host_name = _HOST_NAMES.get(host_tag) or host_name or "github.com"
+
+        if auth:
+            url = f"https://{_get_auth(auth)}@{host_name}/{owner}/{repo}.git"
+        else:
+            url = f"https://{host_name}/{owner}/{repo}.git"
+
+        if branch:
+            cmd = tuple(chain(("git", "clone", "-b", branch), split(o), ("--", url, repo_path)))
+        else:
+            cmd = tuple(chain(("git", "clone"), split(o), ("--", url, repo_path)))
     else:
-        url = shlex.quote(f"https://github.com/{owner}/{repo}.git")
+        if basename:
+            repo_path = os.path.join(_REPOS_ROOT, basename)
+        elif matched := re.search(r"/([-.\w]+)/?$", remote):
+            repo = matched.group(1)
+            if repo.endswith(".git"):
+                repo = repo[:-4]
+            repo_path = os.path.join(_REPOS_ROOT, repo)
+        else:
+            print(
+                f"Failed to infer `basename` from {remote}. "
+                "Please provide `basename` or consider using `!git clone` instead."
+            )
+            return
 
-    if branch:
-        cmd = f"git clone --single-branch -b {branch} -- {url} {shlex.quote(repo_path)}"
-    else:
-        cmd = f"git clone -- {url} {shlex.quote(repo_path)}"
+        if os.path.exists(repo_path):
+            print(
+                f"{repo_path} already exists."
+                f"Consider `pull('{os.path.basename(repo_path)}')` instead?"
+            )
+            return
+
+        cmd = tuple(chain(("git", "clone"), split(o), ("--", remote, repo_path)))
+
     try:
-        result = subprocess.run(
-            shlex.split(cmd),
-            capture_output=True,
-            encoding="utf-8",
-            timeout=timeout,
-        )
+        result = subprocess.run(cmd, capture_output=True, encoding="utf-8", timeout=timeout)
     except subprocess.TimeoutExpired as exc:
         print(exc)
         return
@@ -273,7 +295,11 @@ def clone_gh(
         print(result.stderr, end="")
         return
 
-    if "p" in opt:
+    if "e" in x:
+        install(repo_path, o="-e")
+        return
+
+    if "p" in x:
         if os.path.isdir(src_path := os.path.join(repo_path, "src")):
             sys.path.append(src_path)
             _colab._sys_path_extensions.append(src_path)
@@ -282,30 +308,31 @@ def clone_gh(
             _colab._sys_path_extensions.append(repo_path)
         return
 
-    if "e" in opt:
-        _install_editable(repo_path)
-        return
 
+def pull(basename: str, *, o: str = "", timeout: int | None = 60) -> None:
+    """Pull from a remote Git repository into its clone on Colab.
 
-def pull_gh(dir_name: str, timeout: int | None = 60) -> None:
-    """Pull from the GitHub repository.
+    - This function is a convenience interface for using the Git command `git pull ⟨o⟩`
+        in the repository directory `/content/repos/⟨basename⟩/`.
 
     Args:
-        dir_name: Basename of the repository in `/content/repos`.
+        basename: Base directory name of the clone in `/content/repos/`.
+
+        o: Additional [options](https://git-scm.com/docs/git-pull#_options)
+            for the `git pull` command.
 
         timeout: Timeout in seconds for the spawned subprocess.
 
             - `None`: No timeout.
     """
-
-    repo_path = os.path.join(_REPOS_ROOT, dir_name)
+    repo_path = os.path.join(_REPOS_ROOT, basename)
     if not os.path.isdir(repo_path):
         print(f"{repo_path} does not exist or is not a directory.")
         return
 
     try:
         result = subprocess.run(
-            ("git", "pull"),
+            ["git", "pull"] + split(o),
             cwd=repo_path,
             capture_output=True,
             encoding="utf-8",
