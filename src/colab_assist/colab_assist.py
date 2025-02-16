@@ -570,7 +570,7 @@ def update_git(timeout: int | None = 90) -> None:
         if result.returncode != 0:
             print(result.stderr, end="")
         else:
-            _git_updated = True
+            _colab._git_updated = True
 
 
 def _clear_repos() -> None:
