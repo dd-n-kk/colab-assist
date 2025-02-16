@@ -1,6 +1,7 @@
 __all__ = (
     "install",
-    "install_gh",
+    "update",
+    "reinstall",
     "clone_gh",
     "pull_gh",
     "reload",
@@ -16,12 +17,14 @@ __all__ = (
 
 import importlib
 import os
-import shlex
+import re
 import shutil
 import subprocess
 import sys
 from email.message import EmailMessage
 from getpass import getpass
+from itertools import chain
+from shlex import split
 from types import ModuleType
 from urllib.parse import urlparse
 
@@ -35,16 +38,55 @@ _COLAB_ROOT = "/content/"
 _DRIVE_MNTPT = "/content/drive/"
 _DRIVE_ROOT = "/content/drive/MyDrive/"
 _REPOS_ROOT = "/content/repos/"
+_HOST_NAMES = {"gh": "github.com", "gl": "gitlab.com", "bb": "bitbucket.org"}
 
 
-def install(*packages: str, timeout: int | None = 60) -> None:
-    """Install or update package(s) with uv.
+def install(*packages: str, o: str = "", timeout: int | None = 60) -> None:
+    """Install package(s) using uv.
+
+    - This function is a convenience interface of the uv command
+        `uv pip install --system ⟨o⟩ -- ⟨packages⟩`.
+        See also its convenience aliases [`update()`][colab_assist.update]
+        and [`reinstall()`][colab_assist.reinstall].
 
     Args:
-        packages: Specification(s) of the package(s) to install or update.
+        packages: Specifiers of the packages to install.
+            In addition to the uv-supported [package specifiers](
+            https://docs.astral.sh/uv/pip/packages/#installing-a-package), colab-assist provides
+            a shorthand for installing packages in remote Git repositories via HTTP:
+            ```
+            [⟨auth⟩@][⟨host⟩/]⟨owner⟩/⟨repo⟩[@⟨ref⟩]
+            ```
+            - `⟨auth⟩` is optional authorization info for a private repository,
+                such as a [GitHub personal access token (PAT)](
+                https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
 
-            - See [uv docs](https://docs.astral.sh/uv/pip/packages/#installing-a-package)
-                for ways to specify packages.
+                - If `⟨auth⟩` is `$`, an input prompt for authorization info will spawn.
+
+                - If `⟨auth⟩` is prefixed with `$`, the part after `$` is treated as
+                    the name of a [Colab Secret](https://stackoverflow.com/a/77737451)
+                    containing the authorization info. Currently this is the recommended way
+                    of managing private info on Colab.
+
+                - Otherwise, `⟨auth⟩` is assumed to be the authorization info proper.
+
+            - `⟨host⟩` is an optional specification of the remote repository host.
+
+                - If `⟨host⟩` is not provided, `github.com` is used as the host domain name.
+
+                - If `⟨host⟩` is prefixed with `$`, it is treated as an abbreviation tag:
+                    - `$gh` for `github.com`.
+                    - `$gl` for `gitlab.com`.
+                    - `$bb` for `bitbucket.org`.
+
+                - Otherwise `⟨host⟩` is assumed to be a host domain name.
+
+            - `⟨owner⟩/⟨repo⟩` is the required identifier of the remote repository.
+
+            - `⟨ref⟩` is an optional specification of a branch, a tag, or a commit.
+
+        o: Additional [options](https://docs.astral.sh/uv/reference/cli/#uv-pip-install)
+            for the `uv pip install` command.
 
         timeout: Timeout in seconds for the spawned subprocess.
 
@@ -53,18 +95,28 @@ def install(*packages: str, timeout: int | None = 60) -> None:
     Examples:
         ```py
         import colab_assist as A
-        A.install('polars')
-        A.install('numpy==2.2.0', 'scipy', timeout=None)
+
+        # Install the latest versions of DuckDB and Polars.
+        A.install("duckdb", "polars", o="-U")
+
+        # Use the PAT stored in the Colab Secret named `my-token` to install the Python package
+        # hosted in the `feat/foo` branch of the private GitHub repository `me/my-repo`.
+        A.install("$my-token@me/my-repo@feat/foo")
         ```
     """
-
     if not packages:
         return
 
-    packages = tuple(shlex.quote(package) for package in packages)
     try:
         result = subprocess.run(
-            shlex.split(f"uv pip install --system -qU {' '.join(packages)}"),
+            tuple(
+                chain(
+                    ("uv", "pip", "install", "--system"),
+                    split(o),
+                    ("--",),
+                    (_parse_package_spec(p) for p in packages),
+                )
+            ),
             capture_output=True,
             encoding="utf-8",
             timeout=timeout,
@@ -76,77 +128,32 @@ def install(*packages: str, timeout: int | None = 60) -> None:
             print(result.stderr, end="")
 
 
-def install_gh(
-    repo: str,
-    branch: str | None = None,
-    *,
-    opt: str = "",
-    auth: str | None = None,
-    secret: str | None = None,
-    timeout: int | None = 60,
-) -> None:
-    """Install or update a package hosted in a GitHub repository with uv.
+def update(*packages: str, o: str = "", timeout: int | None = 60) -> None:
+    """Update package(s) and dependencies using uv.
 
-    - This function is mainly for (re)installing on Colab your in-development GitHub repository.
-        After reinstallation, use [`reload()`][colab_assist.reload] or
-        [`restart()`][colab_assist.restart] for the update to take effect.
-
-    - For accessing your private GitHub repository, colab-assist currently authenticates with
-        [personal access tokens](https://is.gd/qWZkuT) (PATs).
-
-    - Currently the recommended way to manage PATs on Colab is via [Colab Secrets](
-        https://stackoverflow.com/a/77737451). Use a Colab Secret by passing its name to `secret`.
-
-    - You can also load your PAT into a variable in your preferred way and pass it to `auth`.
-        Otherwise, by default a skippable prompt will show up for pasting your PAT.
-
-    Args:
-        repo: Identifier of the GitHub repository, in the form `⟨owner⟩/⟨repo_name⟩`.
-
-        branch: Name of the branch to install from.
-
-            - `None`: Use the repository's default branch.
-
-        opt: A string as an order-agnostic set of single-letter option flags.
-            An option is enabled if and only if its corresponding letter is in the string.
-
-            - `q` for _quiet_:
-                Suppress the skippable prompt for GitHub authentication info
-                when neither `auth` nor `secret` is provided.
-                The function will then assume GitHub authentication is not required.
-
-        auth: Your GitHub authentication info.
-
-            - If `auth` is provided, `secret` is ignored.
-
-        secret: Name of the Colab Secret storing your GitHub authentication info.
-
-        timeout: Timeout in seconds for the spawned subprocess.
-
-            - `None`: No timeout.
-
-    Examples:
-        ```py
-        import colab_assist as A
-        A.install_gh("me/my_private_repo", "dev", secret="my_secret")
-        ```
+    - This is a convenience alias of [`install()`][colab_assist.install]
+        with `--upgrade` included in `o`.
+        The command `uv pip install` used by `install()` is relatively conservative by default:
+        Already installed packages will not be updated unless an update is required to
+        satisfy an explicit version restriction or to resolve an incompatibility.
+        With `--upgrade`, uv will always try to update the packages and their dependencies
+        to the latest versions, but this also increases the risk of breaking the Colab environment.
     """
+    install(*packages, o="-U " + o, timeout=timeout)
 
-    auth = auth or _get_auth(secret, "q" not in opt)
-    prefix = f"git+https://{auth}@github.com/" if auth else "git+https://github.com/"
-    suffix = f"{repo}@{branch}" if branch else repo
-    try:
-        result = subprocess.run(
-            ("uv", "pip", "install", "--system", "-Uq", shlex.quote(f"{prefix}{suffix}")),
-            capture_output=True,
-            encoding="utf-8",
-            timeout=timeout,
-        )
-    except subprocess.TimeoutExpired as exc:
-        print(exc)
-    else:
-        if result.returncode != 0:
-            print(result.stderr, end="")
+
+def reinstall(*packages: str, o: str = "", timeout: int | None = 60) -> None:
+    """Reinstall package(s) and dependencies using uv.
+
+    - This is a convenience alias of [`install()`][colab_assist.install]
+        with `--reinstall` included in `o`.
+        `--reinstall` is more drastic than [`--upgrade`][colab_assist.update]:
+        It forces reinstalling packages and all dependencies even if they are already
+        the latest versions. However, according to the [uv documentation](
+        https://docs.astral.sh/uv/concepts/projects/init/#projects-with-extension-modules),
+        `--reinstall` is required for changes in non-Python extension code to take effect.
+    """
+    install(*packages, o="--reinstall " + o, timeout=timeout)
 
 
 def clone_gh(
@@ -365,7 +372,6 @@ def reload(obj: object) -> object:
         # ... (Updated behavior)
         ```
     """
-
     if (name := getattr(obj, "__name__", None)) is None:
         print(f"Failed to reload {obj}: Missing attribute `__name__`.")
         return obj
@@ -404,7 +410,6 @@ def edit(path: str, opt: str = "") -> None:
                 This option creates a blank file (and all its parent directories if necessary)
                 if `path` does not exist.
     """
-
     if not os.path.exists(path):
         if "c" in opt:
             if parent := os.path.dirname(path):
@@ -439,7 +444,6 @@ def download(url: str, path: str | None = None, *, chunk_size: int = 131072) -> 
     Returns:
         Absolute path of the downloaded file, or `None` if the download was not successful.
     """
-
     with requests.get(url, stream=True) as resp:
         if resp.status_code != 200:
             print(f"{url} responded with status {resp.status_code}:\n{_get_resp_reason(resp)}")
@@ -484,7 +488,6 @@ def restart() -> None:
         This function does some extra bookkeeping so that certain session states
         can be recovered upon importing `colab_assist` in the next session.
     """
-
     _colab._save_state()
 
     if (ishell := get_ipython()) is None:
@@ -499,19 +502,16 @@ def mount(force: bool = False) -> None:
     Args:
         force: Option to force remounting if Google Drive is already mounted.
     """
-
     _colab.drive.mount(_DRIVE_MNTPT, force_remount=force)
 
 
 def unmount() -> None:
     """Flush and unmount Google Drive."""
-
     _colab.drive.flush_and_unmount()
 
 
 def end() -> None:
     """Terminate the Colab runtime after some cleanup operations."""
-
     _clear_repos()
     _colab.drive.flush_and_unmount()
     _colab.runtime.unassign()
@@ -527,7 +527,6 @@ def update_git(timeout: int | None = 90) -> None:
 
             - `None`: No timeout.
     """
-
     if _colab._git_updated:
         return
 
@@ -552,14 +551,14 @@ def _clear_repos() -> None:
     shutil.rmtree(_REPOS_ROOT, ignore_errors=True)
 
 
-def _get_auth(secret: str | None = None, prompt: bool = True) -> str:
-    if secret:
-        return _colab.userdata.get(secret)
-
-    if prompt:
+def _get_auth(auth: str) -> str:
+    if auth == "$":
         return getpass("Authentication (or enter nothing to skip): ")
 
-    return ""
+    if auth.startswith("$"):
+        return _colab.userdata.get(auth[1:])
+
+    return auth
 
 
 def _get_resp_reason(resp: requests.Response) -> str:
@@ -573,34 +572,23 @@ def _get_resp_reason(resp: requests.Response) -> str:
     return reason if reason else "Reason not provided"
 
 
-def _install_editable(path: str) -> None:
-    try:
-        result = subprocess.run(
-            ("uv", "pip", "install", "--system", "-eq", shlex.quote(path)),
-            capture_output=True,
-            encoding="utf-8",
-            timeout=30,
-        )
-    except subprocess.TimeoutExpired as exc:
-        print(exc)
-    else:
-        if result.returncode != 0:
-            print(result.stderr, end="")
+def _parse_package_spec(spec: str) -> str:
+    pattern = (
+        r"(?:(\$?[-%+.:\w]*)@)?"  # auth
+        r"(?:\$(gh|gl|bb)/|([-a-zA-Z0-9]+\.[-.a-zA-Z0-9]+)/)?"  # host
+        r"([-\w]+/[-.\w]+(?:@[-./\w]+)?)"  # owner/repo@ref
+    )
 
-
-def _reinstall(path: str) -> None:
-    try:
-        result = subprocess.run(
-            ("uv", "pip", "install", "--system", "--reinstall", "-q", shlex.quote(path)),
-            capture_output=True,
-            encoding="utf-8",
-            timeout=30,
-        )
-    except subprocess.TimeoutExpired as exc:
-        print(exc)
+    if matched := re.fullmatch(pattern, spec):
+        auth, host_tag, host_name, repo = matched.groups()
     else:
-        if result.returncode != 0:
-            print(result.stderr, end="")
+        return spec
+
+    host_name = _HOST_NAMES.get(host_tag) or host_name or "github.com"
+
+    if auth:
+        return f"git+https://{_get_auth(auth)}@{host_name}/{repo}"
+    return f"git+https://{host_name}/{repo}"
 
 
 _colab._load_state()
