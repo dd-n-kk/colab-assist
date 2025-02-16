@@ -180,7 +180,7 @@ def clone(
         [Git URL](https://git-scm.com/docs/git-clone#_git_urls) and delegated to `git clone`.
 
     Args:
-        repo: Specifier of the remote Git repository to clone.
+        remote: Specifier of the remote Git repository to clone.
 
         basename: Directory name of the clone.
 

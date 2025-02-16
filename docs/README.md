@@ -18,11 +18,11 @@
 
 ## About
 
-- __colab-assist__ is a small package that shares utility functions
+- __colab-assist__ is a small package that shares the utility functions that
   I find useful for my development workflows on [Google Colab](https://colab.google).
 
 - Actually, this is also a semi-mock project that I use to learn Python open-source development.
-  [Feedbacks, guidance, and feature suggestions](https://github.com/dd-n-kk/colab-assist/issues/)
+  [Feedbacks, pointers, and feature suggestions](https://github.com/dd-n-kk/colab-assist/issues/)
   are much appreciated!
 
 
@@ -46,16 +46,16 @@
     - Install → experiment → push → resintall:
       ```py
       # Install your private package
-      A.install_gh("me/my_pkg", "dev", secret="my_token")
+      A.install("$my_token@me/my_pkg@feat/foo")
 
       # Experiment
       from my_pkg import foo
       foo()
 
-      # (Push update accordingly to the development branch of your repo)
+      # Update the repo
 
       # Reinstall updated package
-      A.install_gh("me/my_pkg", "dev", secret="my_token")
+      A.install("$my_token@me/my_pkg@feat/foo")
 
       # Reimport updated functions/classes without needing to restart Colab session
       foo = A.reload(foo)
@@ -64,46 +64,56 @@
 
     - Or clone → experiment → push → pull:
       ```py
-      # Clone your private package and add it to `sys.path`
-      A.clone_gh("me/my_pkg", "dev", opt="p", secret="my_token")
+      # Clone your private package and automatically add it to `sys.path`
+      A.clone("$my_token@me/my_pkg@feat/foo", x="p")
 
       # Experiment
       from my_pkg import foo
       foo()
 
-      # (Push updates accordingly to the development branch of your repo)
+      # Update the repo
 
       # Pull the update
-      A.pull_gh("my_pkg")
+      A.pull("my_pkg")
 
       # Reimport updated functions/classes without needing to restart Colab session
       foo = A.reload(foo)
       foo()
+
+      # Or restart the Colab session with `sys.path` automatically recovered
+      A.restart()
+
+      from my_pkg import foo  # Immediately importable!
+      foo()
+
+      # Terminate the Colab runtime with your clones automatically cleaned up
+      A.end()
       ```
+
+### Text file creation and editing
+
+```py
+# Create `foo.txt` at working directory and call `google.colab.files.view()` to edit it
+A.edit("foo.txt", x="c")
+```
 
 
 ## Dependencies & Installation
 
-- Although currently colab-assist lists no dependency,
+- Although currently colab-assist lists no dependencies,
   it is intended to __only be installed and used in a Google Colab environment__.
   The reason not to explicitly list dependencies for now is that
   at least one depedency ([`google-colab`](https://github.com/googlecolab/colabtools))
   is bespoke for Colab and not hosted on PyPI.
   However, colab-assist is designed to install and run just fine on a fresh Colab instance.
 
-- You can install colab-assist very quickly with the pre-installed uv on Colab:
+- You can install colab-assist very quickly with pre-installed uv on Colab:
   ``` { .yaml .copy }
-  !uv pip install --system -qU colab-assist
+  !uv pip install --system -q colab-assist
   ```
   Or with pip:
   ``` { .yaml .copy }
-  %pip install -qU colab-assist
-  ```
-
-- This package is currently a single-file package.
-  Therefore you may use it quick and dirty by just downloading the module file:
-  ``` { .yaml .copy }
-  !wget -q https://raw.githubusercontent.com/dd-n-kk/colab-assist/master/src/colab_assist/colab_assist.py
+  %pip install -q colab-assist
   ```
 
 
