@@ -1,4 +1,46 @@
 
+### [0.2.0](https://github.com/dd-n-kk/colab-assist/compare/v0.1.2..v0.2.0) - 2025-02-16
+
+#### Features
+
+- Add edit() - ([96300da](https://github.com/dd-n-kk/colab-assist/commit/96300da44d5e55283293241d2adbd8695ad5b0a7)) - dd-n-kk
+- Add `__version__` attribute to module (#1) - ([0cf32f5](https://github.com/dd-n-kk/colab-assist/commit/0cf32f52cd7ea5415ad590f565709cee26dbf9cb)) - dd-n-kk
+-  [**breaking**]Overhaul `install()` and add `update()` and `reinstall()` - ([4031d3a](https://github.com/dd-n-kk/colab-assist/commit/4031d3a2bf0a9b609da5cb0914db5b5b2e5c2708)) - dd-n-kk
+-  [**breaking**]Overhaul and rename `clone_gh()` and `pull_gh()` into `clone()` and `pull()` respectively - ([9ab8279](https://github.com/dd-n-kk/colab-assist/commit/9ab82794c0b63c530a4cf819ffcd37905544a4c6)) - dd-n-kk
+
+#### Bug Fixes
+
+- Correct state bookkeeping of `update_git()` - ([954dda5](https://github.com/dd-n-kk/colab-assist/commit/954dda5b88615099ce278cb5fde1541bcccc3799)) - dd-n-kk
+
+#### Refactoring
+
+- Move import state maintenance & colabtool dependencies into `_colab` module to simplify mocking - ([eb972a0](https://github.com/dd-n-kk/colab-assist/commit/eb972a0c54cb8c2ebe636cb3182be53cbcd60089)) - dd-n-kk
+-  [**breaking**]Rename `opt` parameter of `edit()` to `x` - ([9db743e](https://github.com/dd-n-kk/colab-assist/commit/9db743eafd6077dfa5cbf4f726d7c28a963c3395)) - dd-n-kk
+
+#### Documentation
+
+- Edit project description - ([e26df0c](https://github.com/dd-n-kk/colab-assist/commit/e26df0c770974b51a67d863f7290e2be8a5c0687)) - dd-n-kk
+- Add shields badges and adjustments - ([2a2524a](https://github.com/dd-n-kk/colab-assist/commit/2a2524aa2c96593ce0282af512dfda8d255233f6)) - dd-n-kk
+- Setup CHANGELOG - ([5540d47](https://github.com/dd-n-kk/colab-assist/commit/5540d47d2f824f6f70971e02b5f8e97d8db150df)) - dd-n-kk
+- Add badges to README - ([192c25e](https://github.com/dd-n-kk/colab-assist/commit/192c25ea9fb926708d651e45d33a65b7f8d6484c)) - dd-n-kk
+- Update README and correct docstring - ([76a9a3d](https://github.com/dd-n-kk/colab-assist/commit/76a9a3d8ecc50296d68759410bd521e1e86aa8b6)) - dd-n-kk
+
+#### Tests
+
+- Add test script stub - ([ed53a11](https://github.com/dd-n-kk/colab-assist/commit/ed53a1106d3326926e2bd21e58aead3c83333c3b)) - dd-n-kk
+- Add tests for `restart()`, `mount()`, `unmount()`, `end()`, and helpers - ([2276e69](https://github.com/dd-n-kk/colab-assist/commit/2276e69756cfa366f3cbe6e0193f1ae48888e3f5)) - dd-n-kk
+
+#### Chores
+
+- **(build)** Remove upper cap on Python version - ([a201e7d](https://github.com/dd-n-kk/colab-assist/commit/a201e7da841547c9b1a5b4841ef81c4d86b7048a)) - dd-n-kk
+- **(build)** Bumpy Python version to >=3.11 - ([427afd2](https://github.com/dd-n-kk/colab-assist/commit/427afd2677cd4afbd48e2a80c3fb5960fac88152)) - dd-n-kk
+- **(cicd)** Add CI workflow - ([8b1e4b4](https://github.com/dd-n-kk/colab-assist/commit/8b1e4b47568cfb9508073f22f4f402d3fc380f0f)) - dd-n-kk
+- **(cicd)** Add release PR workflow - ([687c22b](https://github.com/dd-n-kk/colab-assist/commit/687c22b0b3fe349883de2842ab1d821376c93dcd)) - dd-n-kk
+- **(cicd)** Remove installation tests from release workflow - ([69c6b8d](https://github.com/dd-n-kk/colab-assist/commit/69c6b8dc41d1082e190cb6e4c441a3a873457059)) - dd-n-kk
+- Add pytest & pytest-cov as dev dependencies - ([ab64211](https://github.com/dd-n-kk/colab-assist/commit/ab64211e1584263284dd2276712bb339502a673f)) - dd-n-kk
+
+---
+
 ### 0.1.2 - 2025-01-24
 
 #### Features
