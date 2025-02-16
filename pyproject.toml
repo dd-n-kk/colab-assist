@@ -18,7 +18,7 @@ exclude = [
 
 [project]
 name = "colab-assist"
-version = "0.1.2"
+version = "0.2.0"
 description = "Google Colab workflow utilities"
 authors = [
     {name = "dd-n-kk", email = "djlstvn.cs03@gmail.com"}
