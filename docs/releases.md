@@ -1,4 +1,12 @@
 
+### [0.3.0](https://github.com/dd-n-kk/colab-assist/compare/v0.2.1..v0.3.0) - 2025-02-17
+
+#### Features
+
+-  [**breaking**]Drop `reinstall()` alias due to niche use case (#12) - ([f0805d1](https://github.com/dd-n-kk/colab-assist/commit/f0805d19b18ee54ab89fbfecf287d520ab46cad5)) - dd-n-kk
+
+---
+
 ### [0.2.1](https://github.com/dd-n-kk/colab-assist/compare/v0.2.0..v0.2.1) - 2025-02-17
 
 #### Bug Fixes
