@@ -1,4 +1,16 @@
 
+### [0.3.0](https://github.com/dd-n-kk/colab-assist/compare/v0.2.2..v0.3.0) - 2025-02-17
+
+#### Documentation
+
+- Correct version number in CHANGELOG - ([6df1166](https://github.com/dd-n-kk/colab-assist/commit/6df11669c1f0c1b89e965f3cceafcf783ff2e1e3)) - dd-n-kk
+
+#### Chores
+
+- **(cicd)** Fix version bump options of release PR workflow - ([2a5caa5](https://github.com/dd-n-kk/colab-assist/commit/2a5caa593e0daa1e46f6d32b842d7fbd222d525e)) - dd-n-kk
+
+---
+
 ### [0.2.2](https://github.com/dd-n-kk/colab-assist/compare/v0.2.1..v0.2.2) - 2025-02-17
 
 #### Features
