@@ -296,7 +296,7 @@ def clone(
         return
 
     if "e" in x:
-        install(repo_path, o="-e")
+        _install_editable(repo_path, timeout)
         return
 
     if "p" in x:
@@ -596,6 +596,21 @@ def _get_resp_reason(resp: requests.Response) -> str:
             reason = reason.decode("iso-8859-1", errors="backslashreplace")
 
     return reason if reason else "Reason not provided"
+
+
+def _install_editable(path: str, timeout: int | None) -> None:
+    try:
+        result = subprocess.run(
+            ("uv", "pip", "install", "--system", "-e", path),
+            capture_output=True,
+            encoding="utf-8",
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        print(exc)
+    else:
+        if result.returncode != 0:
+            print(result.stderr, end="")
 
 
 def _parse_package_spec(spec: str) -> str:
