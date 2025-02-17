@@ -141,7 +141,7 @@ A.edit("foo.txt", x="c")
 [issues]: https://github.com/dd-n-kk/colab-assist/issues
 [ci-workflow-badge]: https://img.shields.io/github/actions/workflow/status/dd-n-kk/colab-assist/ci.yaml?style=flat-square&logo=pytest&logoColor=white&label=CI
 [ci-workflow]: https://github.com/dd-n-kk/colab-assist/actions/workflows/ci.yaml
-[release-workflow-badge]: https://img.shields.io/github/actions/workflow/status/dd-n-kk/colab-assist/release.yaml?style=flat-square&logo=pypi&logoColor=white&label=Build
+[release-workflow-badge]: https://img.shields.io/github/actions/workflow/status/dd-n-kk/colab-assist/release.yaml?style=flat-square&logo=githubactions&logoColor=white&label=Build
 [release-workflow]: https://github.com/dd-n-kk/colab-assist/actions/workflows/release.yaml
 [codecov-badge]: https://img.shields.io/codecov/c/github/dd-n-kk/colab-assist?style=flat-square&logo=codecov&logoColor=white&label=Coverage
 [codecov]: https://app.codecov.io/gh/dd-n-kk/colab-assist
