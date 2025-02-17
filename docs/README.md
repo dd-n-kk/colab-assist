@@ -83,7 +83,8 @@
       # Or restart the Colab session with `sys.path` automatically recovered
       A.restart()
 
-      from my_pkg import foo  # Immediately importable!
+      import colab_assist as A  # Import `colab_assist` recovers previously extended `sys.path`
+      from my_pkg import foo  # The clone is now again importable
       foo()
 
       # Terminate the Colab runtime with your clones automatically cleaned up
