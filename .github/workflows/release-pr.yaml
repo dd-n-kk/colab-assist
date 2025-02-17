@@ -59,9 +59,11 @@ jobs:
     # Use cliff.toml to configure.
     # Makes a copy to `./docs/` as release notes in documentation.
     - name: Update CHANGELOG
+      env:
+        BUMP: ${{ github.event.inputs.bump }}
       run: |
         touch CHANGELOG.md
-        uvx --from git-cliff git cliff --bump -up CHANGELOG.md
+        uvx --from git-cliff git cliff --bump $BUMP -up CHANGELOG.md
         cp CHANGELOG.md docs/releases.md
 
     # `git push` uses `GITHUB_TOKEN` embedded in `remote.origin.url`.
