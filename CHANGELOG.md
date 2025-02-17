@@ -1,4 +1,16 @@
 
+### [0.2.1](https://github.com/dd-n-kk/colab-assist/compare/v0.2.0..v0.2.1) - 2025-02-17
+
+#### Bug Fixes
+
+- Fix editable installation for `clone()` (#10) - ([95dac62](https://github.com/dd-n-kk/colab-assist/commit/95dac62b5ecf0d16e95fa983a607a87b9e12b194)) - dd-n-kk
+
+#### Documentation
+
+- Clarify usage - ([092626c](https://github.com/dd-n-kk/colab-assist/commit/092626cd1a5357f087e98ed4a421b10cba127171)) - dd-n-kk
+
+---
+
 ### [0.2.0](https://github.com/dd-n-kk/colab-assist/compare/v0.1.2..v0.2.0) - 2025-02-16
 
 #### Features
