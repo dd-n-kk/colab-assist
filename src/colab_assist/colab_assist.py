@@ -1,7 +1,6 @@
 __all__ = (
     "install",
     "update",
-    "reinstall",
     "clone",
     "pull",
     "reload",
@@ -46,8 +45,7 @@ def install(*packages: str, o: str = "", timeout: int | None = 60) -> None:
 
     - This function is a convenience interface of the uv command
         `uv pip install --system ⟨o⟩ -- ⟨packages⟩`.
-        See also its convenience aliases [`update()`][colab_assist.update]
-        and [`reinstall()`][colab_assist.reinstall].
+        See also its convenience alias [`update()`][colab_assist.update].
 
     Args:
         packages: Specifiers of the packages to install.
@@ -140,20 +138,6 @@ def update(*packages: str, o: str = "", timeout: int | None = 60) -> None:
         to the latest versions, but this also increases the risk of breaking the Colab environment.
     """
     install(*packages, o="-U " + o, timeout=timeout)
-
-
-def reinstall(*packages: str, o: str = "", timeout: int | None = 60) -> None:
-    """Reinstall package(s) and dependencies using uv.
-
-    - This is a convenience alias of [`install()`][colab_assist.install]
-        with `--reinstall` included in `o`.
-        `--reinstall` is more drastic than [`--upgrade`][colab_assist.update]:
-        It forces reinstalling packages and all dependencies even if they are already
-        the latest versions. However, according to the [uv documentation](
-        https://docs.astral.sh/uv/concepts/projects/init/#projects-with-extension-modules),
-        `--reinstall` is required for changes in non-Python extension code to take effect.
-    """
-    install(*packages, o="--reinstall " + o, timeout=timeout)
 
 
 def clone(
