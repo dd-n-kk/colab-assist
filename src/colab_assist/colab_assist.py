@@ -4,6 +4,7 @@ __all__ = (
     "clone",
     "pull",
     "reload",
+    "secret",
     "edit",
     "download",
     "restart",
@@ -401,6 +402,21 @@ def reload(obj: object) -> object:
         return obj
 
     return getattr(importlib.reload(sys.modules[module_name]), name)
+
+
+def secret(name: str) -> str:
+    """Retrieve Colab Secret.
+
+    - This function is a convenience alias of `google.colab.userdata.get()`.
+
+    Args:
+        name: Name of a [Colab Secret](https://stackoverflow.com/a/77737451)
+            accessible to the Colab notebook.
+
+    Returns:
+        The content of the Colab Secret.
+    """
+    return _colab.userdata.get(name)
 
 
 def edit(path: str, *, x: str = "") -> None:
