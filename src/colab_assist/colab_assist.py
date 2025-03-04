@@ -51,8 +51,9 @@ def install(*packages: str, o: str = "", timeout: int | None = 60) -> None:
     Args:
         packages: Specifiers of the packages to install.
             In addition to the uv-supported [package specifiers](
-            https://docs.astral.sh/uv/pip/packages/#installing-a-package), colab-assist provides
-            a shorthand for installing packages in remote Git repositories via HTTP:
+            https://docs.astral.sh/uv/pip/packages/#installing-a-package),
+            colab-assist provides a shorthand for installing packages
+            in remote Git repositories via HTTP:
             ```
             [⟨auth⟩@][⟨host⟩/]⟨owner⟩/⟨repo⟩[@⟨ref⟩]
             ```
@@ -64,14 +65,14 @@ def install(*packages: str, o: str = "", timeout: int | None = 60) -> None:
 
                 - If `⟨auth⟩` is prefixed with `$`, the part after `$` is treated as
                     the name of a [Colab Secret](https://stackoverflow.com/a/77737451)
-                    containing the authorization info. Currently this is the recommended way
-                    of managing private info on Colab.
+                    containing the authorization info. Currently this is the recommended
+                    way of managing private info on Colab.
 
                 - Otherwise, `⟨auth⟩` is assumed to be the authorization info proper.
 
             - `⟨host⟩` is an optional specification of the remote repository host.
 
-                - If `⟨host⟩` is not provided, `github.com` is used as the host domain name.
+                - If `⟨host⟩` is not provided, the host domain name will be `github.com`.
 
                 - If `⟨host⟩` is prefixed with `$`, it is treated as an abbreviation tag:
                     - `$gh` for `github.com`.
@@ -96,10 +97,12 @@ def install(*packages: str, o: str = "", timeout: int | None = 60) -> None:
         import colab_assist as A
 
         # Install the latest versions of DuckDB and Polars.
+        # This is equivalent to `A.update("duckdb", "polars")`.
         A.install("duckdb", "polars", o="-U")
 
-        # Use the PAT stored in the Colab Secret named `my-token` to install the Python package
-        # hosted in the `feat/foo` branch of the private GitHub repository `me/my-repo`.
+        # Use the PAT stored in the Colab Secret named `my-token`
+        # to install the Python package hosted in the `feat/foo` branch
+        # of the private GitHub repository `me/my-repo`.
         A.install("$my-token@me/my-repo@feat/foo")
         ```
     """
@@ -131,12 +134,13 @@ def update(*packages: str, o: str = "", timeout: int | None = 60) -> None:
     """Update package(s) and dependencies using uv.
 
     - This is a convenience alias of [`install()`][colab_assist.install]
-        with `--upgrade` included in `o`.
-        The command `uv pip install` used by `install()` is relatively conservative by default:
+        with `--upgrade` included in `o`. The command `uv pip install`
+        used by `install()` is relatively conservative by default:
         Already installed packages will not be updated unless an update is required to
         satisfy an explicit version restriction or to resolve an incompatibility.
-        With `--upgrade`, uv will always try to update the packages and their dependencies
-        to the latest versions, but this also increases the risk of breaking the Colab environment.
+        With `--upgrade`, uv will always try to update packages and their dependencies
+        to the latest versions, but this also increases the risk of
+        breaking the Colab environment.
     """
     install(*packages, o="-U " + o, timeout=timeout)
 
@@ -149,7 +153,7 @@ def clone(
     x: str = "",
     timeout: int | None = 60,
 ) -> None:
-    """Clone a remote Git repository and optionally make the Python package in it importable.
+    """Clone a Git repository and optionally make the Python package in it importable.
 
     - This function is a convenience interface of the Git command
         `git clone ⟨o⟩ -- ⟨remote⟩ "/content/repos/⟨basename⟩"`.
@@ -161,8 +165,8 @@ def clone(
         ```
         [⟨auth⟩@][⟨host⟩/]⟨owner⟩/⟨repo⟩[@⟨branch⟩]
         ```
-        Any unrecognized `remote` argument is assumed to be a valid
-        [Git URL](https://git-scm.com/docs/git-clone#_git_urls) and delegated to `git clone`.
+        Any unrecognized `remote` argument is assumed to be a valid [Git URL](
+        https://git-scm.com/docs/git-clone#_git_urls) and passed as is to `git clone`.
 
     Args:
         remote: Specifier of the remote Git repository to clone.
@@ -181,18 +185,19 @@ def clone(
                 This option should not be used together with `e`.
                 This option assumes the GitHub repository hosts a Python package,
                 and will add its top-level module directory to `sys.path`.
-                This allows importing the package without installing it,
-                which may help avoiding dependency conflicts with Colab-preinstalled packages.
+                This allows importing the package without installing it, which may help
+                avoiding dependency conflicts with Colab-preinstalled packages.
 
                 Notable implications include:
 
-                - The cloned package is immediately importable without needing a session restart.
+                - The cloned package is immediately importable without a session restart.
                 - Changes in the clone (e.g. by [`pull()`][colab_assist.pull])
                     can take effect via [`reload()`][colab_assist.reload];
                     a session restart is not mandatory.
-                - If a Colab session restart is triggered by [`restart()`][colab_assist.restart],
-                    `colab_assist` module will try to recover `sys.path` upon import.
-                    But otherwise you will need to manually re-add the top-module directory
+                - If a Colab session restart is triggered by
+                    [`restart()`][colab_assist.restart], `colab_assist` module
+                    will try to recover `sys.path` upon import. But otherwise
+                    you will need to manually re-add the top-module directory
                     to `sys.path` after a session restart.
 
             - `e` for _editable_:
@@ -203,9 +208,10 @@ def clone(
 
                 Notable implications include:
 
-                - Currently an editable install seems to require a session restart to take effect.
+                - Currently an editable install requires a session restart to take effect.
                 - But after the installation, changes in the clone can take effect
-                    via [`reload()`][colab_assist.reload]; a session restart is not mandatory.
+                    via [`reload()`][colab_assist.reload];
+                    a session restart is not mandatory.
                 - Unlike `sys.path`, editable install is not reset by session restarts.
 
         timeout: Timeout in seconds for the spawned subprocess.
@@ -218,7 +224,8 @@ def clone(
 
         # Use the PAT stored in the Colab Secret named `my-token`
         # to clone the `feat/foo` branch of the private GitHub repository `me/my-repo`
-        # into directory `/content/repos/foo/`, and then install the clone as an editable package.
+        # into directory `/content/repos/foo/`,
+        # and then install the clone as an editable package.
         A.clone("$my-token@me/my-repo@feat/foo", "foo", x="e")
         ```
     """
@@ -232,7 +239,9 @@ def clone(
         auth, host_tag, host_name, owner, repo, branch = matched.groups()
 
         if os.path.exists(repo_path := os.path.join(_REPOS_ROOT, basename or repo)):
-            print(f"{repo_path} already exists. Consider `pull('{basename or repo}')` instead?")
+            print(
+                f"{repo_path} already exists. Use `pull('{basename or repo}')` instead?"
+            )
             return
 
         host_name = _HOST_NAMES.get(host_tag) or host_name or "github.com"
@@ -243,7 +252,9 @@ def clone(
             url = f"https://{host_name}/{owner}/{repo}.git"
 
         if branch:
-            cmd = tuple(chain(("git", "clone", "-b", branch), split(o), ("--", url, repo_path)))
+            cmd = tuple(
+                chain(("git", "clone", "-b", branch), split(o), ("--", url, repo_path))
+            )
         else:
             cmd = tuple(chain(("git", "clone"), split(o), ("--", url, repo_path)))
     else:
@@ -271,7 +282,9 @@ def clone(
         cmd = tuple(chain(("git", "clone"), split(o), ("--", remote, repo_path)))
 
     try:
-        result = subprocess.run(cmd, capture_output=True, encoding="utf-8", timeout=timeout)
+        result = subprocess.run(
+            cmd, capture_output=True, encoding="utf-8", timeout=timeout
+        )
     except subprocess.TimeoutExpired as exc:
         print(exc)
         return
@@ -334,26 +347,27 @@ def reload(obj: object) -> object:
     """Reimport a module, function, or class.
 
     - This function internally uses [`importlib.reload()`](
-        https://docs.python.org/3/library/importlib.html#importlib.reload) to reimport modules,
-        and [`getattr()`](https://docs.python.org/3/library/functions.html#getattr)
+        https://docs.python.org/3/library/importlib.html#importlib.reload)
+        to reimport modules, and [`getattr()`](
+        https://docs.python.org/3/library/functions.html#getattr)
         to retrieve attributes from reimported modules.
         So the limitations and caveats of `importlib.reload()` persist. In particular:
 
-        - Reloading a module does not automatically reload its parent modules or submodules.
+        - Reloading a module does not auto-reload its parent modules or submodules.
         - Names defined in the old version of the module but not in the new version
-            (e.g. when an attribute is removed in an update) are not automatically deleted.
+            (e.g. when an attribute is removed in an update) are not auto-deleted.
         - This function can correctly reload a non-module object
             only if the object has valid `__name__` and `__module__` attributes.
-            So, usually, functions and classes are the only directly reloadable non-modules.
+            So usually functions and classes are the only directly reloadable non-modules.
             However, after a module is reimported,
             its non-module attributes can be updated via `import` statements.
         - Reloading a class does not affect previously created instances.
         - To properly reload a non-module, the return value must be captured.
             It is recommended to always use the `xxx = reload(xxx)` pattern.
 
-    - This function should mainly be used on modules, functions, or classes in your package
-        for an update to take effect, and only when the changes are localized enough
-        that restarting the Colab session is overkill.
+    - This function should mainly be used on modules, functions, or classes
+        in your package for an update to take effect, and only when the changes are
+        localized enough that restarting the Colab session is overkill.
 
     - See also [`%autoreload`](
         https://ipython.readthedocs.io/en/stable/config/extensions/autoreload.html)
@@ -433,8 +447,8 @@ def edit(path: str, *, x: str = "") -> None:
 
             - `c` for _create_:
                 By default, `edit()` does not create a new file.
-                This option creates a blank file (and all its parent directories if necessary)
-                if `path` does not exist.
+                This option creates a blank file
+                (and all its parent directories if necessary) if `path` does not exist.
     """
     if not os.path.exists(path):
         if "c" in x:
@@ -451,7 +465,9 @@ def edit(path: str, *, x: str = "") -> None:
         print(f"{path} is not a file.")
 
 
-def download(url: str, path: str | None = None, *, chunk_size: int = 131072) -> str | None:
+def download(
+    url: str, path: str | None = None, *, chunk_size: int = 131072
+) -> str | None:
     """Download a file from a URL.
 
     Args:
@@ -462,17 +478,17 @@ def download(url: str, path: str | None = None, *, chunk_size: int = 131072) -> 
             - `None`: The file is saved in the current working directory
                 and the file name is inferred from the response headers or the URL.
 
-        chunk_size: Number of bytes read into memory while iterating over the response data.
+        chunk_size: Number of bytes read into memory while iterating over the response.
 
             - This argument is passed directly to [`request.Response.iter_content()`](
                 https://requests.readthedocs.io/en/latest/api/#requests.Response.iter_content).
 
     Returns:
-        Absolute path of the downloaded file, or `None` if the download was not successful.
+        Absolute path of the downloaded file, or `None` if the download failed.
     """
     with requests.get(url, stream=True) as resp:
         if resp.status_code != 200:
-            print(f"{url} responded with status {resp.status_code}:\n{_get_resp_reason(resp)}")
+            print(f"Status {resp.status_code}: {_get_resp_reason(resp)}")
             return
 
         if path is None:
@@ -505,7 +521,8 @@ def download(url: str, path: str | None = None, *, chunk_size: int = 131072) -> 
 def restart() -> None:
     """Trigger a Colab session restart after some bookkeeping operations.
 
-    - Colab is expected to issue a notification: "Your session crashed for an unknown reason."
+    - Colab is expected to issue a notification:
+        "Your session crashed for an unknown reason."
     - Explicitly restarting the Colab session, e.g., with this function,
         with `exit()`, or with the `Restart session` command in the Colab `Runtime` menu,
         resets all imports and variables in the Python interpreter session.
@@ -517,7 +534,9 @@ def restart() -> None:
     _colab._save_state()
 
     if (ishell := get_ipython()) is None:
-        print("Global interactive shell not found. Try `exit()` or `Runtime -> Restart session`.")
+        print(
+            "Interactive shell not found. Try `exit()` or `Runtime -> Restart session`."
+        )
     else:
         ishell.ask_exit()  # type: ignore
 
@@ -546,7 +565,7 @@ def end() -> None:
 def update_git(timeout: int | None = 90) -> None:
     """Update Git.
 
-    - Current implementation uses APT, so the update process is relatively slow (about 1 min).
+    - Current implementation uses APT, so the update is relatively slow (about 1 min).
 
     Args:
         timeout: Timeout in seconds for the spawned subprocess.
