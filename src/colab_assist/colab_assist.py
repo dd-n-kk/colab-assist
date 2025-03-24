@@ -57,6 +57,7 @@ def install(*packages: str, o: str = "", timeout: int | None = 60) -> None:
             ```
             [⟨auth⟩@][⟨host⟩/]⟨owner⟩/⟨repo⟩[@⟨ref⟩]
             ```
+
             - `⟨auth⟩` is optional authorization info for a private repository,
                 such as a [GitHub personal access token (PAT)](
                 https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
