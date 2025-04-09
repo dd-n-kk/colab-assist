@@ -3,7 +3,7 @@ import pickle
 import subprocess
 import sys
 
-from google.colab import drive, files, runtime, userdata  # type: ignore
+from google.colab import drive, files, runtime, userdata  # type: ignore  # noqa
 
 _STATE_PATH = "/content/.colab_state"
 
@@ -24,6 +24,9 @@ def _load_state() -> None:
             if "sys_path_extensions" in state:
                 _sys_path_extensions = state["sys_path_extensions"]
                 sys.path.extend(_sys_path_extensions)
+
+    # Temporary workaround for colabtools/issues#5237
+    os.environ["UV_CONSTRAINT"] = os.environ["UV_BUILD_CONSTRAINT"] = ""
 
 
 def _save_state() -> None:
