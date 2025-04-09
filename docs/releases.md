@@ -3,7 +3,7 @@
 
 #### Features
 
--  [**breaking**]Drop `reinstall()` alias due to niche use case (#12) - ([f0805d1](https://github.com/dd-n-kk/colab-assist/commit/f0805d19b18ee54ab89fbfecf287d520ab46cad5)) - dd-n-kk
+- [**breaking**] Drop `reinstall()` alias due to niche use case (#12) - ([f0805d1](https://github.com/dd-n-kk/colab-assist/commit/f0805d19b18ee54ab89fbfecf287d520ab46cad5)) - dd-n-kk
 
 ---
 
@@ -25,8 +25,8 @@
 
 - Add edit() - ([96300da](https://github.com/dd-n-kk/colab-assist/commit/96300da44d5e55283293241d2adbd8695ad5b0a7)) - dd-n-kk
 - Add `__version__` attribute to module (#1) - ([0cf32f5](https://github.com/dd-n-kk/colab-assist/commit/0cf32f52cd7ea5415ad590f565709cee26dbf9cb)) - dd-n-kk
--  [**breaking**]Overhaul `install()` and add `update()` and `reinstall()` - ([4031d3a](https://github.com/dd-n-kk/colab-assist/commit/4031d3a2bf0a9b609da5cb0914db5b5b2e5c2708)) - dd-n-kk
--  [**breaking**]Overhaul and rename `clone_gh()` and `pull_gh()` into `clone()` and `pull()` respectively - ([9ab8279](https://github.com/dd-n-kk/colab-assist/commit/9ab82794c0b63c530a4cf819ffcd37905544a4c6)) - dd-n-kk
+- [**breaking**] Overhaul `install()` and add `update()` and `reinstall()` - ([4031d3a](https://github.com/dd-n-kk/colab-assist/commit/4031d3a2bf0a9b609da5cb0914db5b5b2e5c2708)) - dd-n-kk
+- [**breaking**] Overhaul and rename `clone_gh()` and `pull_gh()` into `clone()` and `pull()` respectively - ([9ab8279](https://github.com/dd-n-kk/colab-assist/commit/9ab82794c0b63c530a4cf819ffcd37905544a4c6)) - dd-n-kk
 
 #### Bug Fixes
 
@@ -35,7 +35,7 @@
 #### Refactoring
 
 - Move import state maintenance & colabtool dependencies into `_colab` module to simplify mocking - ([eb972a0](https://github.com/dd-n-kk/colab-assist/commit/eb972a0c54cb8c2ebe636cb3182be53cbcd60089)) - dd-n-kk
--  [**breaking**]Rename `opt` parameter of `edit()` to `x` - ([9db743e](https://github.com/dd-n-kk/colab-assist/commit/9db743eafd6077dfa5cbf4f726d7c28a963c3395)) - dd-n-kk
+- [**breaking**] Rename `opt` parameter of `edit()` to `x` - ([9db743e](https://github.com/dd-n-kk/colab-assist/commit/9db743eafd6077dfa5cbf4f726d7c28a963c3395)) - dd-n-kk
 
 #### Documentation
 
