@@ -1,4 +1,25 @@
 
+### [0.2.3](https://github.com/dd-n-kk/colab-assist/compare/v0.2.2..v0.2.3) - 2025-04-09
+
+#### Features
+
+-  Add `secret()` - ([2af1eac](https://github.com/dd-n-kk/colab-assist/commit/2af1eac21917aeb9f633ddd57efa7e5acd7ab8d0)) - dd-n-kk
+
+#### Bug Fixes
+
+-  Add temporary workaround for colabtools/issues#5237 - ([9ba0466](https://github.com/dd-n-kk/colab-assist/commit/9ba0466e386bfda4a2bbadf89bc86a417218d592)) - dd-n-kk
+
+#### Documentation
+
+-  Correct version number in CHANGELOG - ([6df1166](https://github.com/dd-n-kk/colab-assist/commit/6df11669c1f0c1b89e965f3cceafcf783ff2e1e3)) - dd-n-kk
+
+#### Chores
+
+- **(cicd)** Fix version bump options of release PR workflow - ([2a5caa5](https://github.com/dd-n-kk/colab-assist/commit/2a5caa593e0daa1e46f6d32b842d7fbd222d525e)) - dd-n-kk
+- **(cicd)** Fix spacing in git-cliff template - ([5757258](https://github.com/dd-n-kk/colab-assist/commit/5757258d7424d79f88209ae74fc786ff20f133f4)) - dd-n-kk
+
+---
+
 ### [0.2.2](https://github.com/dd-n-kk/colab-assist/compare/v0.2.1..v0.2.2) - 2025-02-17
 
 #### Features
