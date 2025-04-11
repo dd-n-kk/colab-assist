@@ -1,4 +1,16 @@
 
+### [0.2.4](https://github.com/dd-n-kk/colab-assist/compare/v0.2.3..v0.2.4) - 2025-04-11
+
+#### Bug Fixes
+
+- Add follow-up workaround for [colabtools/issues#5237](https://github.com/colabtools/issues/issues/5237) - ([344aaca](https://github.com/dd-n-kk/colab-assist/commit/344aacab850c57d3e0af6d36e2937247084860bd)) - dd-n-kk
+
+#### Chores
+
+- **(cicd)** Refine trigger of release workflow - ([b8f7a9f](https://github.com/dd-n-kk/colab-assist/commit/b8f7a9f943899e7a13d92a85ca18102e8a42c57c)) - dd-n-kk
+
+---
+
 ### [0.2.3](https://github.com/dd-n-kk/colab-assist/compare/v0.2.2..v0.2.3) - 2025-04-09
 
 #### Features
