@@ -27,6 +27,7 @@ def _load_state() -> None:
 
     # Temporary workaround for colabtools/issues#5237
     os.environ["UV_CONSTRAINT"] = os.environ["UV_BUILD_CONSTRAINT"] = ""
+    os.environ["UV_PRERELEASE"] = "if-necessary-or-explicit"
 
 
 def _save_state() -> None:
